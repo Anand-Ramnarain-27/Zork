@@ -1,0 +1,22 @@
+#pragma once
+#include "Creature.h"
+#include <vector>
+
+// The player character with inventory system
+class Player : public Creature {
+private:
+    vector<Entity*> inventory;  // Items being carried
+
+public:
+    Player(const string& name, const string& description, Room* room);
+
+    // Inventory management
+    bool takeItem(const string& itemName);    // Pick up from current room
+    bool dropItem(const string& itemName);    // Drop to current room
+    bool hasItem(const string& itemName) const; // Check inventory
+    void showInventory() const;              // List carried items
+
+    // Puzzle interactions
+    bool useItem(const string& itemName);     // Try to use an item
+    bool combineItems(const string& item1, const string& item2); // Merge items
+};
