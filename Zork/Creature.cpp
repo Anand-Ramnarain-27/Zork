@@ -1,20 +1,8 @@
 #include "Creature.h"
 #include "Exit.h"  
+#include "Room.h"
 #include "GameEnums.h"
 #include <iostream>
-
-// Helper: Convert direction enum to string
-string directionToString(Direction direction) {
-    switch (direction) {
-    case Direction::NORTH: return "north";
-    case Direction::SOUTH: return "south";
-    case Direction::EAST: return "east";
-    case Direction::WEST: return "west";
-    case Direction::UP: return "up";
-    case Direction::DOWN: return "down";
-    default: return "unknown direction";
-    }
-}
 
 // Adds creature to starting room
 Creature::Creature(EntityType type, const string& name, const string& description, Room* room) :

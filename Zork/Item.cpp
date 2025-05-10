@@ -1,4 +1,5 @@
 #include "Item.h"
+#include "Entity.h"
 #include <iostream>
 
 // Create new item with properties

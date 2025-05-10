@@ -1,15 +1,7 @@
 #pragma once
 #include "Entity.h"
+#include "GameEnums.h"
 #include <map>
-
-enum class Direction {
-    NORTH,
-    SOUTH,
-    EAST,
-    WEST,
-    UP,
-    DOWN
-};
 
 // Represents a game location with exits to other rooms
 class Room : public Entity {

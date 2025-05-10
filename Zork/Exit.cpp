@@ -1,4 +1,5 @@
 #include "Exit.h"
+#include "GameEnums.h"
 #include <iostream>
 
 // Create new exit between rooms

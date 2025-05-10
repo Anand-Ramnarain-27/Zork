@@ -1,4 +1,6 @@
 #include "NPC.h"
+#include "Player.h"
+#include "Entity.h"
 #include <iostream>
 
 // Create new NPC in specified room

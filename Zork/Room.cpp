@@ -1,6 +1,7 @@
 #include "Room.h"
-#include <iostream>
 #include "GameEnums.h"
+#include "Entity.h"
+#include <iostream>
 
 // Create new room with name and description
 Room::Room(const string& name, const string& description) :
@@ -25,7 +26,7 @@ void Room::look() const {
     // List all available exits
     if (!exits.empty()) {
         cout << "Exits:" << endl;
-        for (auto exit : exits) {
+        for (const auto& exit : exits) {
             string direction;
             switch (exit.first) {
             case Direction::NORTH: direction = "north"; break;

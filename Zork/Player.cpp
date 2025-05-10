@@ -1,4 +1,7 @@
 #include "Player.h"
+#include "Room.h"
+#include "Creature.h"
+#include "Entity.h"
 #include <iostream>
 
 // Create player in starting room
