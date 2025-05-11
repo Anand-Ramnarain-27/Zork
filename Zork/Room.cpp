@@ -1,6 +1,7 @@
 #include "Room.h"
 #include "GameEnums.h"
 #include "Entity.h"
+#include "Exit.h"
 #include <iostream>
 
 // Create new room with name and description

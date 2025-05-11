@@ -1,5 +1,6 @@
-#include "Exit.h"
+﻿#include "Exit.h"
 #include "GameEnums.h"
+#include "Room.h"
 #include <iostream>
 
 // Create new exit between rooms
@@ -11,13 +12,24 @@ Exit::Exit(Direction direction, Room* source, Room* destination,
     source(source),
     destination(destination),
     locked(locked),
-    keyName(keyName) {
+    keyName(keyName)
+{
+    // Register exit with source room
+    source->setExit(direction, this);
 }
 
-Room* Exit::getSource() const { return source; }
-Room* Exit::getDestination() const { return destination; }
-bool Exit::isLocked() const { return locked; }
-const string& Exit::getKeyName() const { return keyName; }
+// Returns the opposite direction
+Direction Exit::getReverseDirection() const {
+    switch (direction) {
+    case Direction::NORTH: return Direction::SOUTH;
+    case Direction::SOUTH: return Direction::NORTH;
+    case Direction::EAST:  return Direction::WEST;
+    case Direction::WEST:  return Direction::EAST;
+    case Direction::UP:    return Direction::DOWN;
+    case Direction::DOWN:  return Direction::UP;
+    default: return Direction::NORTH; // Fallback
+    }
+}
 
 // Attempt to unlock exit with key item
 bool Exit::unlock(const string& key) {
@@ -30,8 +42,9 @@ bool Exit::unlock(const string& key) {
 
 // Show exit info including lock status
 void Exit::look() const {
-    Entity::look();  // Show base description
+    Entity::look(); // Show base description
+
     if (locked) {
-        cout << "Locked. Needs: " << keyName << endl;
+        cout << "Locked (requires " << keyName << ")" << endl;
     }
 }

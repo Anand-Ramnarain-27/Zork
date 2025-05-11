@@ -1,9 +1,11 @@
 #include "World.h"
 #include "Player.h"
+#include "GameEnums.h"
+#include "Room.h"
 #include <iostream>
-#include <string>
 #include <sstream>
 #include <algorithm>
+#include <vector>
 
 using namespace std;
 
@@ -52,15 +54,23 @@ void PrintWelcome() {
 }
 
 void PrintHelp() {
-    cout << "\nCommands:\n";
-    cout << "look - View current location\n";
-    cout << "go [direction] - Move (north/south/east/west/up/down)\n";
-    cout << "take/drop [item] - Manage inventory\n";
-    cout << "inventory - View carried items\n";
-    cout << "use [item] - Use an item\n";
-    cout << "combine [item1] [item2] - Merge items\n";
-    cout << "help - Show this list\n";
-    cout << "quit - Exit game\n";
+    cout << "\nAvailable commands:\n";
+    cout << "------------------\n";
+    cout << "Movement:\n";
+    cout << "  go [direction] - Move in specified direction\n";
+    cout << "  north/n, south/s, east/e, west/w, up/u, down/d - Quick movement\n";
+    cout << "  look/l - Look around the current room\n";
+    cout << "\nInventory:\n";
+    cout << "  take [item] - Pick up an item\n";
+    cout << "  drop [item] - Drop an item\n";
+    cout << "  inventory/i - Check your inventory\n";
+    cout << "  use [item] - Use an item (e.g., keys on doors)\n";
+    cout << "  combine [item1] [item2] - Combine two items\n";
+    cout << "\nInteraction:\n";
+    cout << "  talk [npc] - Talk to an NPC\n";
+    cout << "\nOther:\n";
+    cout << "  help - Show this help\n";
+    cout << "  quit - Exit the game\n";
 }
 
 // Splits input string into words
@@ -80,44 +90,61 @@ vector<string> TokenizeInput(const string& input) {
 void ProcessCommand(const vector<string>& tokens, Player& player) {
     string command = tokens[0];
 
-    if (command == "help") {
-        PrintHelp();
+    // Movement commands
+    if (command == "go") {
+        if (tokens.size() < 2) {
+            cout << "Go where? (north, south, east, west, up, down)\n";
+            return;
+        }
+
+        // Convert direction string to enum
+        Direction dir;
+        if (tokens[1] == "north") dir = Direction::NORTH;
+        else if (tokens[1] == "south") dir = Direction::SOUTH;
+        else if (tokens[1] == "east") dir = Direction::EAST;
+        else if (tokens[1] == "west") dir = Direction::WEST;
+        else if (tokens[1] == "up") dir = Direction::UP;
+        else if (tokens[1] == "down") dir = Direction::DOWN;
+        else {
+            cout << "Invalid direction. Use north, south, east, west, up, or down.\n";
+            return;
+        }
+        player.moveTo(dir);
     }
+    // Quick movement aliases
+    else if (command == "north" || command == "n") {
+        player.moveTo(Direction::NORTH);
+    }
+    else if (command == "south" || command == "s") {
+        player.moveTo(Direction::SOUTH);
+    }
+    else if (command == "east" || command == "e") {
+        player.moveTo(Direction::EAST);
+    }
+    else if (command == "west" || command == "w") {
+        player.moveTo(Direction::WEST);
+    }
+    else if (command == "up" || command == "u") {
+        player.moveTo(Direction::UP);
+    }
+    else if (command == "down" || command == "d") {
+        player.moveTo(Direction::DOWN);
+    }
+    // Observation
     else if (command == "look" || command == "l") {
         player.getLocation()->look();
     }
-    else if (command == "go") {
-        if (tokens.size() < 2) {
-            cout << "Specify direction (north/south/east/west/up/down)\n";
-            return;
-        }
-
-        // Convert input to direction
-        Direction dir;
-        string dirStr = tokens[1];
-        if (dirStr == "north") dir = Direction::NORTH;
-        else if (dirStr == "south") dir = Direction::SOUTH;
-        else if (dirStr == "east") dir = Direction::EAST;
-        else if (dirStr == "west") dir = Direction::WEST;
-        else if (dirStr == "up") dir = Direction::UP;
-        else if (dirStr == "down") dir = Direction::DOWN;
-        else {
-            cout << "Invalid direction\n";
-            return;
-        }
-
-        player.move(dir);
-    }
+    // Inventory management
     else if (command == "take") {
         if (tokens.size() < 2) {
-            cout << "Specify item to take\n";
+            cout << "Take what?\n";
             return;
         }
         player.takeItem(tokens[1]);
     }
     else if (command == "drop") {
         if (tokens.size() < 2) {
-            cout << "Specify item to drop\n";
+            cout << "Drop what?\n";
             return;
         }
         player.dropItem(tokens[1]);
@@ -125,21 +152,36 @@ void ProcessCommand(const vector<string>& tokens, Player& player) {
     else if (command == "inventory" || command == "i") {
         player.showInventory();
     }
+    // Item interaction
     else if (command == "use") {
         if (tokens.size() < 2) {
-            cout << "Specify item to use\n";
+            cout << "Use what?\n";
             return;
         }
         player.useItem(tokens[1]);
     }
     else if (command == "combine") {
         if (tokens.size() < 3) {
-            cout << "Specify two items to combine\n";
+            cout << "Combine what with what?\n";
             return;
         }
         player.combineItems(tokens[1], tokens[2]);
     }
+    // NPC interaction
+    else if (command == "talk") {
+        if (tokens.size() < 2) {
+            cout << "Talk to whom?\n";
+            return;
+        }
+        cout << "You talk to " << tokens[1] << ", but nothing happens yet.\n";
+    }
+    // Help system
+    else if (command == "help") {
+        PrintHelp();
+    }
+    // Unknown command
     else {
-        cout << "Unknown command. Type 'help' for options.\n";
+        cout << "I don't understand '" << command << "'.\n";
+        cout << "Type 'help' for available commands.\n";
     }
 }

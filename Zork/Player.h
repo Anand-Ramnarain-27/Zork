@@ -1,5 +1,8 @@
 #pragma once
 #include "Creature.h"
+#include "Entity.h"
+#include "GameEnums.h"
+#include "Room.h"
 #include <vector>
 
 // The player character with inventory system
@@ -9,6 +12,10 @@ private:
 
 public:
     Player(const string& name, const string& description, Room* room);
+
+    // Movement commands
+    bool moveTo(Direction direction);
+    bool moveTo(Room* room);
 
     // Inventory management
     bool takeItem(const string& itemName);    // Pick up from current room
