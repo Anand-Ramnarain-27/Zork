@@ -2,6 +2,7 @@
 #include "Player.h"
 #include "GameEnums.h"
 #include "Room.h"
+#include "NPC.h"
 #include <iostream>
 #include <sstream>
 #include <algorithm>
@@ -25,22 +26,36 @@ int main() {
 
     // Main game loop
     string input;
-    while (true) {
+    bool gameRunning = true;
+    while (gameRunning) {
         cout << "\n> ";
         getline(cin, input);
 
-        // Normalize and parse input
+        // Convert input to lowercase and tokenize
         transform(input.begin(), input.end(), input.begin(), ::tolower);
         vector<string> tokens = TokenizeInput(input);
 
         if (tokens.empty()) continue;
 
+        // Check for quit command
         if (tokens[0] == "quit" || tokens[0] == "exit") {
-            cout << "Goodbye!\n";
+            cout << "Goodbye, brave adventurer!\n";
             break;
         }
+
+        // Process the command
         ProcessCommand(tokens, player);
+
+        // Check win condition
+        if (player.hasItem("restored amulet") &&
+            player.getLocation()->getName() == "Sorcerer's Tower") {
+            cout << "\n\n*** You place the restored amulet on the altar! ***\n";
+            cout << "*** The curse is lifted and Eldoria is saved! ***\n";
+            cout << "*** CONGRATULATIONS! YOU WIN! ***\n\n";
+            gameRunning = false;
+        }
     }
+
     return 0;
 }
 
@@ -67,20 +82,40 @@ void PrintHelp() {
     cout << "  inventory/i - Check your inventory\n";
     cout << "  use [item] - Use an item (e.g., keys on doors)\n";
     cout << "  combine [item1] [item2] - Combine two items\n";
-    cout << "\nInteraction:\n";
+    cout << "\nNPC Interaction:\n";
     cout << "  talk [npc] - Talk to an NPC\n";
+    cout << "  talk [npc] [topic] - Ask about specific topic\n";
     cout << "\nOther:\n";
     cout << "  help - Show this help\n";
     cout << "  quit - Exit the game\n";
+    cout << "\nInventory Rules:\n";
+    cout << "  - Without backpack: Can carry up to 3 small items\n";
+    cout << "  - With backpack: Can carry more items\n";
+    cout << "  - Some items must be given to NPCs (use 'give' command)\n";
 }
 
 // Splits input string into words
 vector<string> TokenizeInput(const string& input) {
     vector<string> tokens;
-    stringstream ss(input);
     string token;
+    bool inQuotes = false;
 
-    while (ss >> token) {
+    for (char c : input) {
+        if (c == '"') {
+            inQuotes = !inQuotes;
+        }
+        else if ((isspace(c) && !inQuotes)) {
+            if (!token.empty()) {
+                tokens.push_back(token);
+                token.clear();
+            }
+        }
+        else {
+            token += c;
+        }
+    }
+
+    if (!token.empty()) {
         tokens.push_back(token);
     }
 
@@ -156,10 +191,18 @@ void ProcessCommand(const vector<string>& tokens, Player& player) {
     // Item interaction
     else if (command == "use") {
         if (tokens.size() < 2) {
-            cout << "Use what?\n";
+            cout << "Use what?" << endl;
             return;
         }
-        player.useItem(tokens[1]);
+
+        // Combine remaining tokens for item names with spaces
+        string itemName;
+        for (size_t i = 1; i < tokens.size(); i++) {
+            if (i > 1) itemName += " ";
+            itemName += tokens[i];
+        }
+
+        player.useItem(itemName);
     }
     else if (command == "combine") {
         if (tokens.size() < 3) {
@@ -168,14 +211,70 @@ void ProcessCommand(const vector<string>& tokens, Player& player) {
         }
         player.combineItems(tokens[1], tokens[2]);
     }
+    else if (command == "give") {
+        if (tokens.size() < 3) {
+            cout << "Give what to whom? (e.g., 'give bread blacksmith')" << endl;
+            return;
+        }
+
+        string itemName = tokens[1];
+        string npcName = tokens[2];
+
+        // Find NPC
+        Entity* entity = player.getLocation()->findEntity(npcName);
+        if (entity && entity->getType() == EntityType::NPC) {
+            NPC* npc = dynamic_cast<NPC*>(entity);
+            if (npc) {
+                if (player.hasItem(itemName)) {
+                    npc->interact(&player); // This will handle the giving
+                }
+                else {
+                    cout << "You don't have " << itemName << " to give." << endl;
+                }
+            }
+        }
+        else {
+            cout << "There's no " << npcName << " here to give items to." << endl;
+        }
+    }
     // NPC interaction
     else if (command == "talk") {
         if (tokens.size() < 2) {
             cout << "Talk to whom?\n";
             return;
         }
-        cout << "You talk to " << tokens[1] << ", but nothing happens yet.\n";
-    }
+
+        // Find the NPC in the current room
+        Entity* entity = nullptr;
+        for (auto e : player.getLocation()->getContains()) {
+            if (e->getType() == EntityType::NPC && e->nameMatches(tokens[1])) {
+                entity = e;
+                break;
+            }
+        }
+
+        if (entity) {
+            NPC* npc = dynamic_cast<NPC*>(entity);
+            if (npc) {
+                if (tokens.size() > 2) {
+                    // Handle specific questions
+                    string question;
+                    for (size_t i = 2; i < tokens.size(); i++) {
+                        if (i > 2) question += " ";
+                        question += tokens[i];
+                    }
+                    npc->handlePlayerInput(question, &player);
+                }
+                else {
+                    // Default interaction
+                    npc->interact(&player);
+                }
+            }
+        }
+        else {
+            cout << "There's no " << tokens[1] << " here to talk to." << endl;
+        }
+        }
     // Help system
     else if (command == "help") {
         PrintHelp();

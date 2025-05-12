@@ -17,4 +17,6 @@ public:
 
     // Display room info
     void look() const override; 
+
+    const map<Direction, Entity*>& getExits() const { return exits; }
 };

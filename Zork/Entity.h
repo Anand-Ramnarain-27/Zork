@@ -2,6 +2,7 @@
 #include <string>
 #include <list>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -38,6 +39,15 @@ public:
     void removeEntity(Entity* entity);
     Entity* findEntity(const string& name) const; // Find by name
     bool containsEntity(const Entity* entity) const; // Check if exists
+
+    // New case-insensitive name matching
+    bool nameMatches(const string& nameToMatch) const {
+        string thisName = name;
+        string otherName = nameToMatch;
+        transform(thisName.begin(), thisName.end(), thisName.begin(), ::tolower);
+        transform(otherName.begin(), otherName.end(), otherName.begin(), ::tolower);
+        return thisName == otherName;
+    }
 
     virtual void update(); 
     virtual void look() const; // Show description + contents

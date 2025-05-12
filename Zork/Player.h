@@ -9,6 +9,7 @@
 class Player : public Creature {
 private:
     vector<Entity*> inventory;  // Items being carried
+    bool hasBackpack() const;
 
 public:
     Player(const string& name, const string& description, Room* room);
@@ -22,6 +23,9 @@ public:
     bool dropItem(const string& itemName);    // Drop to current room
     bool hasItem(const string& itemName) const; // Check inventory
     void showInventory() const;              // List carried items
+    void addItem(Entity* item);
+    bool removeItem(const std::string& itemName);
+    bool canCarryMoreItems() const;
 
     // Puzzle interactions
     bool useItem(const string& itemName);     // Try to use an item

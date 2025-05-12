@@ -91,8 +91,16 @@ bool Player::dropItem(const string& itemName) {
 
 // Check if item is in inventory
 bool Player::hasItem(const string& itemName) const {
+    string lowerInput = itemName;
+    transform(lowerInput.begin(), lowerInput.end(), lowerInput.begin(), ::tolower);
+
     for (auto item : inventory) {
-        if (item->getName() == itemName) return true;
+        string lowerItemName = item->getName();
+        transform(lowerItemName.begin(), lowerItemName.end(), lowerItemName.begin(), ::tolower);
+
+        if (lowerItemName == lowerInput) {
+            return true;
+        }
     }
     return false;
 }
@@ -110,14 +118,133 @@ void Player::showInventory() const {
     }
 }
 
+// Adds item to inventory
+void Player::addItem(Entity* item) {
+    inventory.push_back(item);
+}
+
+// Removes item from inventory
+bool Player::removeItem(const std::string& itemName) {
+    for (auto it = inventory.begin(); it != inventory.end(); ++it) {
+        if ((*it)->getName() == itemName) {
+            // Don't delete here - caller will handle ownership
+            inventory.erase(it);
+            return true;
+        }
+    }
+    return false;
+}
+
 // Try to use an item 
 bool Player::useItem(const string& itemName) {
-    cout << "Can't use " << itemName << " yet" << endl;
-    return false; 
+    // Find the best matching item in inventory
+    Entity* itemToUse = nullptr;
+    string lowerInput = itemName;
+    transform(lowerInput.begin(), lowerInput.end(), lowerInput.begin(), ::tolower);
+
+    // First try exact match
+    for (auto item : inventory) {
+        string lowerItemName = item->getName();
+        transform(lowerItemName.begin(), lowerItemName.end(), lowerItemName.begin(), ::tolower);
+
+        if (lowerItemName == lowerInput) {
+            itemToUse = item;
+            break;
+        }
+    }
+
+    // If no exact match, try partial match
+    if (!itemToUse) {
+        int bestMatchLength = 0;
+        for (auto item : inventory) {
+            string lowerItemName = item->getName();
+            transform(lowerItemName.begin(), lowerItemName.end(), lowerItemName.begin(), ::tolower);
+
+            if (lowerItemName.find(lowerInput) != string::npos) {
+                // Prefer the item with the closest name length
+                if (itemToUse == nullptr || abs(static_cast<int>(lowerItemName.length()) - static_cast<int>(lowerInput.length()))
+                    < bestMatchLength) {
+                    itemToUse = item;
+                    bestMatchLength = abs(static_cast<int>(lowerItemName.length()) - static_cast<int>(lowerInput.length()));
+                }
+            }
+        }
+    }
+
+    // If still no match, show error with suggestions
+    if (!itemToUse) {
+        cout << "You don't have '" << itemName << "'.";
+        if (!inventory.empty()) {
+            cout << " You have: ";
+            for (auto item : inventory) {
+                cout << item->getName();
+                if (item != inventory.back()) {
+                    cout << ", ";
+                }
+            }
+        }
+        cout << endl;
+        return false;
+    }
+
+    // Check if we're trying to use the item on a locked exit
+    Room* currentRoom = getLocation();
+    if (currentRoom) {
+        // Get all exits from the room
+        for (auto exitPair : currentRoom->getExits()) {
+            Entity* exitEntity = exitPair.second;
+            if (exitEntity->getType() == EntityType::EXIT) {
+                Exit* exit = dynamic_cast<Exit*>(exitEntity);
+                if (exit && exit->isLocked()) {
+                    // Check if this item is the key for this exit
+                    if (itemToUse->nameMatches(exit->getKeyName())) {
+                        if (exit->unlock(itemToUse->getName())) {
+                            cout << "You use the " << itemToUse->getName()
+                                << " to unlock the " << exit->getName() << "." << endl;
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Check for other item uses 
+    if (itemToUse->getName() == "lantern") {
+        cout << "You light the lantern, illuminating the dark area around you." << endl;
+        return true;
+    }
+    else if (itemToUse->getName() == "potion") {
+        cout << "You drink the potion and feel rejuvenated." << endl;
+        removeItem(itemToUse->getName());
+        return true;
+    }
+
+    // Default case
+    cout << "You're not sure how to use the " << itemToUse->getName() << " here." << endl;
+    return false;
 }
 
 // Try to combine items 
 bool Player::combineItems(const string& item1, const string& item2) {
     cout << "Can't combine " << item1 << " and " << item2 << endl;
     return false; 
+}
+
+bool Player::hasBackpack() const {
+    for (auto item : inventory) {
+        if (item->getName() == "backpack") {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Player::canCarryMoreItems() const {
+    // If no backpack, can only carry 2 small items
+    if (!hasBackpack()) {
+        return inventory.size() < 2;
+    }
+    // With backpack, use its capacity
+    return true; 
 }

@@ -22,22 +22,34 @@ Entity* Room::getExit(Direction direction) const {
 
 // Show full room description
 void Room::look() const {
-    Entity::look(); 
+    // First print room name and description
+    cout << name << endl;
+    cout << description << endl;
 
-    // List all available exits
-    if (!exits.empty()) {
-        cout << "Exits:" << endl;
-        for (const auto& exit : exits) {
-            string direction;
-            switch (exit.first) {
-            case Direction::NORTH: direction = "north"; break;
-            case Direction::SOUTH: direction = "south"; break;
-            case Direction::EAST: direction = "east"; break;
-            case Direction::WEST: direction = "west"; break;
-            case Direction::UP: direction = "up"; break;
-            case Direction::DOWN: direction = "down"; break;
+    // Print contained items (excluding player)
+    bool hasItems = false;
+    for (auto entity : contains) {
+        if (entity->getType() != EntityType::PLAYER) {
+            if (!hasItems) {
+                cout << "Contains:" << endl;
+                hasItems = true;
             }
-            cout << "- " << direction << endl;
+            cout << "- " << entity->getName() << endl;
         }
+    }
+
+    // Print exits
+    cout << "Exits:" << endl;
+    for (auto exit : exits) {
+        string direction;
+        switch (exit.first) {
+        case Direction::NORTH: direction = "north"; break;
+        case Direction::SOUTH: direction = "south"; break;
+        case Direction::EAST: direction = "east"; break;
+        case Direction::WEST: direction = "west"; break;
+        case Direction::UP: direction = "up"; break;
+        case Direction::DOWN: direction = "down"; break;
+        }
+        cout << "- " << direction << endl;
     }
 }
