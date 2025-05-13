@@ -31,12 +31,36 @@ void Entity::removeEntity(Entity* entity) {
 
 // Find item by name (returns nullptr if not found)
 Entity* Entity::findEntity(const string& name) const {
+    // First try exact match
     for (auto entity : contains) {
-        if (entity->getName() == name) {
+        if (entity->nameMatches(name)) {
             return entity;
         }
     }
-    return nullptr;
+
+    // Then try partial match if no exact match found
+    string lowerName = name;
+    transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
+
+    Entity* bestMatch = nullptr;
+    int bestMatchScore = INT_MAX;
+
+    for (auto entity : contains) {
+        string entityLower = entity->getName();
+        transform(entityLower.begin(), entityLower.end(), entityLower.begin(), ::tolower);
+
+        if (entityLower.find(lowerName) != string::npos) {
+            int diff = static_cast<int>(entityLower.length()) - static_cast<int>(lowerName.length());
+            int score = diff < 0 ? -diff : diff;
+
+            if (score < bestMatchScore) {
+                bestMatch = entity;
+                bestMatchScore = score;
+            }
+        }
+    }
+
+    return bestMatch;
 }
 
 // Check if entity contains specific item

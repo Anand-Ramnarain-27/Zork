@@ -7,7 +7,6 @@
 #include <sstream>
 #include <algorithm>
 #include <vector>
-#include <string>
 
 using namespace std;
 
@@ -97,26 +96,26 @@ void PrintHelp() {
 // Splits input string into words
 vector<string> TokenizeInput(const string& input) {
     vector<string> tokens;
-    string token;
+    string currentToken;
     bool inQuotes = false;
 
     for (char c : input) {
         if (c == '"') {
             inQuotes = !inQuotes;
         }
-        else if ((isspace(c) && !inQuotes)) {
-            if (!token.empty()) {
-                tokens.push_back(token);
-                token.clear();
+        else if (isspace(c) && !inQuotes) {
+            if (!currentToken.empty()) {
+                tokens.push_back(currentToken);
+                currentToken.clear();
             }
         }
         else {
-            token += c;
+            currentToken += c;
         }
     }
 
-    if (!token.empty()) {
-        tokens.push_back(token);
+    if (!currentToken.empty()) {
+        tokens.push_back(currentToken);
     }
 
     return tokens;
@@ -124,6 +123,8 @@ vector<string> TokenizeInput(const string& input) {
 
 // Handles all game commands
 void ProcessCommand(const vector<string>& tokens, Player& player) {
+    if (tokens.empty()) return;
+
     string command = tokens[0];
 
     // Movement commands
@@ -173,9 +174,17 @@ void ProcessCommand(const vector<string>& tokens, Player& player) {
     // Inventory management
     else if (command == "take") {
         if (tokens.size() < 2) {
-            cout << "Take what?\n";
+            cout << "Take what?\n" << endl;
             return;
         }
+
+        // Combine all remaining tokens for the item name
+        string itemName;
+        for (size_t i = 1; i < tokens.size(); i++) {
+            if (i > 1) itemName += " ";
+            itemName += tokens[i];
+        }
+
         player.takeItem(tokens[1]);
     }
     else if (command == "drop") {
@@ -205,11 +214,12 @@ void ProcessCommand(const vector<string>& tokens, Player& player) {
         player.useItem(itemName);
     }
     else if (command == "combine") {
-        if (tokens.size() < 3) {
-            cout << "Combine what with what?\n";
-            return;
+        if (tokens.size() > 1 && tokens[1] == "amulet") {
+            player.combineAmuletFragments();
         }
-        player.combineItems(tokens[1], tokens[2]);
+        else {
+            cout << "Combine what? Try 'combine amulet'\n";
+        }
     }
     else if (command == "give") {
         if (tokens.size() < 3) {
@@ -244,35 +254,21 @@ void ProcessCommand(const vector<string>& tokens, Player& player) {
             return;
         }
 
-        // Find the NPC in the current room
-        Entity* entity = nullptr;
-        for (auto e : player.getLocation()->getContains()) {
-            if (e->getType() == EntityType::NPC && e->nameMatches(tokens[1])) {
-                entity = e;
-                break;
-            }
+        // Combine all remaining tokens for the NPC name
+        string npcName;
+        for (size_t i = 1; i < tokens.size(); i++) {
+            if (i > 1) npcName += " ";
+            npcName += tokens[i];
         }
 
-        if (entity) {
-            NPC* npc = dynamic_cast<NPC*>(entity);
-            if (npc) {
-                if (tokens.size() > 2) {
-                    // Handle specific questions
-                    string question;
-                    for (size_t i = 2; i < tokens.size(); i++) {
-                        if (i > 2) question += " ";
-                        question += tokens[i];
-                    }
-                    npc->handlePlayerInput(question, &player);
-                }
-                else {
-                    // Default interaction
-                    npc->interact(&player);
-                }
-            }
+        // Find the NPC in the current room
+        // Find NPC using the full name
+        Entity* npc = player.getLocation()->findEntity(npcName);
+        if (npc && npc->getType() == EntityType::NPC) {
+            dynamic_cast<NPC*>(npc)->interact(&player);
         }
         else {
-            cout << "There's no " << tokens[1] << " here to talk to." << endl;
+            cout << "There's no " << npcName << " here to talk to." << endl;
         }
         }
     // Help system

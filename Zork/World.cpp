@@ -1,7 +1,6 @@
 ﻿#include "World.h"
 #include "Room.h"
 #include "Exit.h"
-#include "GameEnums.h"
 #include "NPC.h"
 #include "Item.h"
 #include <iostream>
@@ -73,11 +72,14 @@ void World::InitializeWorld() {
 
     // Temple items
     temple->addEntity(new Item("golden key", "An ornate key with eldritch markings", false, 0, false));
-    temple->addEntity(new Item("sapphire", "A blue gemstone fragment", true, 0, true)); // Amulet fragment 2/3
+    //temple->addEntity(new Item("sapphire", "A blue gemstone fragment", true, 0, true)); // Amulet fragment 2/3
 
     // Tower items
     tower->addEntity(new Item("ruby", "A red gemstone fragment", true, 0, true)); // Amulet fragment 3/3
-    tower->addEntity(new Item("altar", "A stone altar with three depressions", false, 0, false));
+    tower->addEntity(new Item("altar",
+        "An ancient altar with three gem-shaped depressions.\n"
+        "The carvings seem to match the amulet fragments you've found.",
+        false, 0, false));
 
     // ===== ADD NPCs =====
     // Village NPC - Blacksmith
@@ -98,7 +100,7 @@ void World::InitializeWorld() {
     NPC* priestess = new NPC("Ghostly Priestess", "A translucent figure in ancient robes", temple);
     priestess->addDialogue("Only the worthy may ascend to the tower...");
     priestess->addDialogue("Bring me the golden key... and I'll grant passage...");
-    priestess->setInteraction("golden key", "sapphire");
+    priestess->setInteraction("herbs", "sapphire");
 
     // Debug output
     cout << "=== WORLD INITIALIZED ===\n";

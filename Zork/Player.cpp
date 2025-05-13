@@ -3,6 +3,8 @@
 #include "Creature.h"
 #include "Entity.h"
 #include "Exit.h"
+#include "GameEnums.h"
+#include "Item.h"
 #include <iostream>
 
 // Create player in starting room
@@ -60,17 +62,43 @@ bool Player::moveTo(Direction direction) {
 
 // Take item from current room
 bool Player::takeItem(const string& itemName) {
-    if (!location) return false;
+    if (location == nullptr) return false;
 
     Entity* item = location->findEntity(itemName);
     if (item && item->getType() == EntityType::ITEM) {
-        location->removeEntity(item);
-        inventory.push_back(item);
-        cout << "Took " << itemName << endl;
-        return true;
+        if (canCarryMoreItems()) {
+            location->removeEntity(item);
+            inventory.push_back(item);
+            cout << "You took the " << item->getName() << "." << endl;
+            return true;
+        }
+        else {
+            cout << "You can't carry more items right now." << endl;
+            return false;
+        }
     }
 
-    cout << "No " << itemName << " here" << endl;
+    cout << "You don't see ";
+    if (itemName.find(' ') != string::npos) {
+        cout << "\"" << itemName << "\"";
+    }
+    else {
+        cout << itemName;
+    }
+    cout << " here." << endl;
+
+    // Show available items
+    cout << "You see: ";
+    bool first = true;
+    for (auto entity : location->getContains()) {
+        if (entity->getType() == EntityType::ITEM) {
+            if (!first) cout << ", ";
+            cout << entity->getName();
+            first = false;
+        }
+    }
+    cout << endl;
+
     return false;
 }
 
@@ -247,4 +275,123 @@ bool Player::canCarryMoreItems() const {
     }
     // With backpack, use its capacity
     return true; 
+}
+
+bool Player::hasAmuletFragment(const string& fragmentName) const {
+    for (auto item : inventory) {
+        if (item->getName() == fragmentName) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Player::combineAmuletFragments() {
+    // Check if in correct location (Sorcerer's Tower)
+    if (getLocation()->getName() != "Sorcerer's Tower") {
+        int fragmentCount = 0;
+        if (hasAmuletFragment("amethyst")) fragmentCount++;
+        if (hasAmuletFragment("sapphire")) fragmentCount++;
+        if (hasAmuletFragment("ruby")) fragmentCount++;
+
+        if (fragmentCount > 0) {
+            cout << "\nThe " << (fragmentCount == 1 ? "fragment" : "fragments")
+                << " in your inventory pulse weakly but nothing happens.\n";
+            cout << "You sense they need to be brought to the Ruined Temple to be combined.\n";
+
+            // Show which fragments player has
+            cout << "You have ";
+            bool first = true;
+            if (hasAmuletFragment("amethyst")) {
+                cout << "amethyst";
+                first = false;
+            }
+            if (hasAmuletFragment("sapphire")) {
+                if (!first) cout << ", ";
+                cout << "sapphire";
+                first = false;
+            }
+            if (hasAmuletFragment("ruby")) {
+                if (!first) cout << ", ";
+                cout << "ruby";
+            }
+            cout << " fragment" << (fragmentCount > 1 ? "s" : "") << ".\n";
+        }
+        else {
+            cout << "You don't have any amulet fragments to combine.\n";
+        }
+        return false;
+    }
+
+    // Check if placed on altar first
+    bool onAltar = false;
+    for (auto entity : getLocation()->getContains()) {
+        if (entity->getName() == "altar") {
+            onAltar = true;
+            break;
+        }
+    }
+
+    if (!onAltar) {
+        cout << "\nThe fragments vibrate intensely but refuse to combine.\n";
+        cout << "You notice an ancient altar in the temple - perhaps they need to be placed there?\n";
+        return false;
+    }
+
+    // Check if player has all three fragments
+    bool hasAll = hasAmuletFragment("amethyst") &&
+        hasAmuletFragment("sapphire") &&
+        hasAmuletFragment("ruby");
+
+    if (!hasAll) {
+        cout << "\nYou stand before the altar with ";
+        int fragmentCount = 0;
+        if (hasAmuletFragment("amethyst")) fragmentCount++;
+        if (hasAmuletFragment("sapphire")) fragmentCount++;
+        if (hasAmuletFragment("ruby")) fragmentCount++;
+
+        cout << "only " << fragmentCount << " fragment" << (fragmentCount > 1 ? "s" : "") << ".\n";
+        cout << "The altar's three depressions mock you with their emptiness.\n";
+
+        // List missing fragments
+        cout << "You're missing: ";
+        bool first = true;
+        if (!hasAmuletFragment("amethyst")) {
+            cout << "amethyst";
+            first = false;
+        }
+        if (!hasAmuletFragment("sapphire")) {
+            if (!first) cout << ", ";
+            cout << "sapphire";
+            first = false;
+        }
+        if (!hasAmuletFragment("ruby")) {
+            if (!first) cout << ", ";
+            cout << "ruby";
+        }
+        cout << ".\n";
+        return false;
+    }
+
+    // All requirements met - combine!
+    cout << "\nAs you place the three fragments on the altar:\n";
+    cout << "1. The amethyst begins humming at a piercing frequency\n";
+    cout << "2. The sapphire emits a wave of comforting warmth\n";
+    cout << "3. The ruby burns with sudden intensity\n\n";
+    cout << "The fragments rise into the air, spinning rapidly as arcane energy connects them!\n";
+    cout << "With a blinding flash and thunderous BOOM, the Amulet of Eldoria is restored!\n";
+
+    // Remove fragments
+    removeItem("amethyst");
+    removeItem("sapphire");
+    removeItem("ruby");
+
+    // Add restored amulet
+    Item* amulet = new Item("Amulet of Eldoria",
+        "The fully restored artifact thrums with primordial energy.\n"
+        "You feel its power resonating with your very soul.",
+        false, 0, false);
+    addItem(amulet);
+
+    return true;
 }

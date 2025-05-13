@@ -30,4 +30,8 @@ public:
     // Puzzle interactions
     bool useItem(const string& itemName);     // Try to use an item
     bool combineItems(const string& item1, const string& item2); // Merge items
+
+	// Amulet fragments actions
+    bool combineAmuletFragments();
+    bool hasAmuletFragment(const string& fragmentName) const;
 };
