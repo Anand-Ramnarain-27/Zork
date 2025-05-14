@@ -4,25 +4,27 @@
 #include <vector>
 #include <map>
 
-// Non-player characters with dialogue and interactions
 class NPC : public Creature {
 private:
-    vector<string> dialogues;  // Available conversation lines
-    map<string, string> responses; // Key: player input, Value: NPC response
-    string requiredItem;      // Item needed for special interaction
-    string rewardItem;        // Item given when requirement met
+    std::vector<std::string> dialogues;
+    std::map<std::string, std::string> responses; // Key: player input, Value: NPC response
+    std::string requiredItem;
+    std::string rewardItem;
     bool hasGivenReward;
+    bool trusts;              // Tracks if NPC trusts the player
+    bool hasImportantInfo;    // If NPC has important story information
+    bool isEnemy;
 
 public:
-    NPC(const string& name, const string& description, Room* room);
+    NPC(const std::string& name, const std::string& description, Room* room);
 
-    // Dialogue management
-    void addDialogue(const string& dialogue);  // Add conversation text
-    void addResponse(const string& playerInput, const string& npcResponse);
-    void setInteraction(const string& required, const string& reward); // Set trade items
+    void addDialogue(const std::string& dialogue);
+    void addResponse(const std::string& playerInput, const std::string& npcResponse);
+    void setInteraction(const std::string& required, const std::string& reward);
+    void setAsEnemy(bool enemy);
+    void setHasImportantInfo(bool hasInfo);
 
-    // Player interactions
-    void talk() const;        // Speak default dialogue
-    void interact(Player* player); // Handle item exchanges
+    void talk() const;
+    void interact(Player* player);
     void handlePlayerInput(const std::string& input, Player* player);
 };

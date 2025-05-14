@@ -14,7 +14,6 @@
 
 using namespace std;
 
-// Function prototypes
 void PrintWelcome();
 void PrintHelp();
 vector<string> TokenizeInput(const string& input);
@@ -56,7 +55,6 @@ int main() {
                     cout << "\nWARNING: It's pitch black! You sense movement in the darkness.\n";
                     cout << "You have a few seconds to light your lantern before creatures attack!\n";
 
-                    // Visual countdown
                     cout << "3... ";
                     this_thread::sleep_for(chrono::seconds(1));
                     cout << "2... ";
@@ -91,14 +89,21 @@ int main() {
 
                     // Check if player died
                     if (!player.isAlive()) {
-                        cout << "\nThe creatures of darkness overwhelm you...\n";
-                        cout << "Your journey ends here.\n";
+                        if (player.getAlignment() < -5) {
+                            cout << "\n===== EVIL ENDING =====\n";
+                            cout << "Your wickedness led to your demise.\n";
+                            cout << "No one mourns your passing.\n";
+                        }
+                        else {
+                            cout << "\n===== GAME OVER =====\n";
+                            cout << "Your journey ends here...\n";
+                        }
                         gameRunning = false;
                     }
                 }
             }
             else {
-                // Normal command processing (not in darkness)
+                // Normal command processing
                 gameRunning = !ProcessCommand(tokens, player);
                 darknessWarningGiven = false;
                 darknessTurns = 0;
@@ -158,6 +163,13 @@ void PrintHelp() {
     cout << "  place amulet - Place completed amulet on tower altar\n";
     cout << "\nNPC Interaction:\n";
     cout << "  talk [npc] - Talk to an NPC\n";
+    cout << "  attack [npc] - Attack an NPC (may affect your alignment)\n";
+    cout << "  forgive [npc] - Show mercy to an NPC (improves alignment)\n";
+    cout << "  sacrifice [npc] - Sacrifice an NPC for power (dark path)\n";
+    cout << "\nMoral Choices:\n";
+    cout << "  corrupt [item] - Corrupt an item for power (dark path)\n";
+    cout << "  alignment - Check your current moral standing\n";
+    cout << "  steal [item] - Steal an item (affects alignment)\n";
     cout << "\nOther:\n";
     cout << "  help - Show this help\n";
     cout << "  quit - Exit the game\n";
@@ -381,6 +393,51 @@ bool ProcessCommand(const vector<string>& tokens, Player& player) {
             }
         }
     }
+    else if (command == "sacrifice") {
+        if (tokens.size() < 2) {
+            cout << "Sacrifice whom?\n";
+            return false;
+        }
+        string npcName;
+        for (size_t i = 1; i < tokens.size(); i++) {
+            if (i > 1) npcName += " ";
+            npcName += tokens[i];
+        }
+
+        // Major negative alignment action
+        player.sacrificeNPC(npcName);
+    }
+    else if (command == "forgive") {
+        if (tokens.size() < 2) {
+            cout << "Forgive whom?\n";
+            return false;
+        }
+        string enemyName;
+        for (size_t i = 1; i < tokens.size(); i++) {
+            if (i > 1) enemyName += " ";
+            enemyName += tokens[i];
+        }
+
+        // Major positive alignment action
+        player.forgiveEnemy(enemyName);
+    }
+    else if (command == "corrupt") {
+        if (tokens.size() < 2) {
+            cout << "Corrupt what?\n";
+            return false;
+        }
+        string artifactName;
+        for (size_t i = 1; i < tokens.size(); i++) {
+            if (i > 1) artifactName += " ";
+            artifactName += tokens[i];
+        }
+
+        // Major negative alignment action
+        player.corruptArtifact(artifactName);
+    }
+    else if (command == "alignment" || command == "karma") {
+        player.showAlignment();
+    }
     // Help system
     else if (command == "help") {
         PrintHelp();
@@ -389,6 +446,30 @@ bool ProcessCommand(const vector<string>& tokens, Player& player) {
     else if (command == "quit" || command == "exit") {
         cout << "Goodbye, brave adventurer!\n";
         return true;
+    }
+    else if (command == "attack") {
+        if (tokens.size() < 2) {
+            cout << "Attack what?\n";
+            return false;
+        }
+        string target;
+        for (size_t i = 1; i < tokens.size(); i++) {
+            if (i > 1) target += " ";
+            target += tokens[i];
+        }
+        player.attackCreature(target);
+    }
+    else if (command == "steal") {
+        if (tokens.size() < 2) {
+            cout << "Steal what?\n";
+            return false;
+        }
+        string item;
+        for (size_t i = 1; i < tokens.size(); i++) {
+            if (i > 1) item += " ";
+            item += tokens[i];
+        }
+        player.stealItem(item);
     }
     // Unknown command
     else {

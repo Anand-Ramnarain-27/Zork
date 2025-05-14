@@ -5,13 +5,15 @@
 #include "Room.h"
 #include <vector>
 
-// The player character with inventory system
 class Player : public Creature {
 private:
-    vector<Entity*> inventory;  // Items being carried
+    vector<Entity*> inventory;
     bool hasBackpack() const;
 
     int lanternTurnsRemaining;
+
+    int moralAlignment = 0; // -10 to 10 (negative = selfish, positive = altruistic)
+    bool hasBetrayedNPCs = false;
 
 public:
     Player(const string& name, const string& description, Room* room);
@@ -26,16 +28,18 @@ public:
     bool hasItem(const string& itemName) const;
     void showInventory() const;
 
-    // New methods for NPC interaction
+    // NPC interaction
     void addItem(Entity* item);
     bool removeItem(const std::string& itemName);
 
-    // Special actions
+    // Item interaction
     bool useItem(const string& itemName);
     bool combineItems(const string& item1, const string& item2);
 
+    // Inventory management
     bool canCarryMoreItems() const;
 
+    // Amulet-specific mechanics
     bool combineAmuletFragments();
     bool hasAmuletFragment(const string& fragmentName) const;
     bool placeAmuletOnAltar();
@@ -45,6 +49,24 @@ public:
     int getLanternTurnsRemaining() const { return lanternTurnsRemaining; }
     bool hasActiveLantern() const;
 
-    // Override takeDamage from Creature
+    // Combat system
     void takeDamage(int amount) override;
+    bool attackCreature(const string& creatureName);
+
+    // Stealing and other negative actions
+    bool stealItem(const string& itemName);
+
+    // Moral choice tracking
+    void makeSelfishChoice() { moralAlignment--; }
+    void makeAltruisticChoice() { moralAlignment++; }
+    void betrayNPCs() { hasBetrayedNPCs = true; }
+    int getAlignment() const { return moralAlignment; }
+    bool hasBetrayed() const { return hasBetrayedNPCs; }
+    void showAlignment() const;
+
+    // NEW METHODS FOR MULTIPLE ENDINGS
+    bool sacrificeNPC(const string& npcName);
+    bool forgiveEnemy(const string& enemyName);
+    bool makeMoralChoice(int choiceType);
+    bool corruptArtifact(const string& artifactName);
 };
