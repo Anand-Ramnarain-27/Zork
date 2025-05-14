@@ -8,6 +8,8 @@ private:
 	int capacity;      // Max items it can hold for now unlimited
     bool isFragment;   // Special fragment item for amulet to win game
 
+    bool isLit;
+
 public:
     Item(const string& name, const string& description,
         bool isContainer = false, int capacity = 0,
@@ -19,4 +21,7 @@ public:
 
     bool canContain(const Entity* entity) const; // Check if item can hold another
     void look() const override; // Show item details
+
+    void setLit(bool lit) { isLit = lit; }
+    bool getIsLit() const { return isLit; }
 };

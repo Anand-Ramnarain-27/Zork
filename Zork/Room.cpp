@@ -4,11 +4,6 @@
 #include "Exit.h"
 #include <iostream>
 
-// Create new room with name and description
-Room::Room(const string& name, const string& description) :
-    Entity(EntityType::ROOM, name, description) {
-}
-
 // Set exit in specified direction
 void Room::setExit(Direction direction, Entity* exit) {
     exits[direction] = exit;

@@ -6,10 +6,13 @@
 #include "GameEnums.h"
 #include "Item.h"
 #include <iostream>
+#include <algorithm>
 
 // Create player in starting room
-Player::Player(const string& name, const string& description, Room* room) :
-    Creature(EntityType::PLAYER, name, description, room) {
+Player::Player(const std::string& name, const std::string& description, Room* room) :
+    Creature(EntityType::PLAYER, name, description, room),
+    lanternTurnsRemaining(0) {
+    setHealth(100);
 }
 
 // Move to a specific room
@@ -106,14 +109,38 @@ bool Player::takeItem(const string& itemName) {
 bool Player::dropItem(const string& itemName) {
     for (auto it = inventory.begin(); it != inventory.end(); ++it) {
         if ((*it)->getName() == itemName) {
-            if (location) location->addEntity(*it);
+            // Check if dropping a lit lantern in a dark room
+            if (itemName == "lantern" && dynamic_cast<Item*>(*it)->getIsLit() &&
+                location && location->getIsDark()) {
+                cout << "You hesitate to drop your lit lantern in this darkness.\n";
+                cout << "That would leave you vulnerable to whatever lurks here.\n";
+
+                // Allow the player to confirm
+                cout << "Are you sure? (y/n): ";
+                string response;
+                getline(cin, response);
+                transform(response.begin(), response.end(), response.begin(), ::tolower);
+
+                if (response != "y" && response != "yes") {
+                    cout << "Wise decision. You keep the lantern.\n";
+                    return false;
+                }
+
+                cout << "You drop the lantern. Its light continues to illuminate the area...\n";
+                cout << "...but you realize that would be a terrible idea. You pick it back up.\n";
+                return false;
+            }
+
+            if (location != nullptr) {
+                location->addEntity(*it);
+            }
             inventory.erase(it);
-            cout << "Dropped " << itemName << endl;
+            cout << "You dropped the " << itemName << "." << endl;
             return true;
         }
     }
 
-    cout << "You don't have " << itemName << endl;
+    cout << "You don't have a " << itemName << "." << endl;
     return false;
 }
 
@@ -136,13 +163,26 @@ bool Player::hasItem(const string& itemName) const {
 // Show all carried items
 void Player::showInventory() const {
     if (inventory.empty()) {
-        cout << "Inventory empty" << endl;
+        cout << "You're not carrying anything." << endl;
         return;
     }
 
-    cout << "Carrying:" << endl;
+    cout << "You're carrying:" << endl;
     for (auto item : inventory) {
-        cout << "- " << item->getName() << endl;
+        if (item->getName() == "lantern") {
+            Item* lantern = dynamic_cast<Item*>(item);
+            cout << "- " << item->getName();
+            if (lantern && lantern->getIsLit()) {
+                cout << " (lit, " << lanternTurnsRemaining << " turns remaining)";
+            }
+            else {
+                cout << " (unlit)";
+            }
+            cout << endl;
+        }
+        else {
+            cout << "- " << item->getName() << endl;
+        }
     }
 }
 
@@ -199,6 +239,58 @@ bool Player::useItem(const string& itemName) {
         }
     }
 
+    // Special handling for lantern
+    if (lowerInput == "lantern" || (itemToUse && itemToUse->getName() == "lantern")) {
+        Item* lantern = nullptr;
+
+        // Find lantern if not already found
+        if (!itemToUse || itemToUse->getName() != "lantern") {
+            for (auto item : inventory) {
+                if (item->getName() == "lantern") {
+                    lantern = dynamic_cast<Item*>(item);
+                    break;
+                }
+            }
+        }
+        else {
+            lantern = dynamic_cast<Item*>(itemToUse);
+        }
+
+        if (lantern) {
+            if (lantern->getIsLit()) {
+                cout << "The lantern is already lit.\n";
+
+                if (lanternTurnsRemaining > 0) {
+                    cout << "It will last for " << lanternTurnsRemaining << " more turns.\n";
+                }
+                else {
+                    cout << "But it seems to be out of fuel.\n";
+                }
+            }
+            else {
+                lantern->setLit(true);
+                lanternTurnsRemaining = 10; // Lasts for 10 turns
+
+                if (location->getIsDark()) {
+                    cout << "The lantern flames to life, its golden light pushing back the darkness!\n";
+                    cout << "Shadows flee to the corners as you can now see clearly.\n";
+                    cout << "The lantern will last for " << lanternTurnsRemaining << " turns.\n";
+
+                    // Show what's in the room now that it's lit
+                    location->look();
+                }
+                else {
+                    cout << "You light the lantern. It will last for about " << lanternTurnsRemaining << " turns.\n";
+                }
+            }
+            return true;
+        }
+        else {
+            cout << "You don't have a lantern.\n";
+            return false;
+        }
+    }
+
     // If still no match, show error with suggestions
     if (!itemToUse) {
         cout << "You don't have '" << itemName << "'.";
@@ -226,6 +318,13 @@ bool Player::useItem(const string& itemName) {
                 if (exit && exit->isLocked()) {
                     // Check if this item is the key for this exit
                     if (itemToUse->nameMatches(exit->getKeyName())) {
+                        // Add darkness check for key usage
+                        if (currentRoom->getIsDark() && !hasActiveLantern()) {
+                            cout << "You fumble with the " << itemToUse->getName() << " in the darkness,\n";
+                            cout << "but can't find the keyhole. You need light to unlock doors here.\n";
+                            return false;
+                        }
+
                         if (exit->unlock(itemToUse->getName())) {
                             cout << "You use the " << itemToUse->getName()
                                 << " to unlock the " << exit->getName() << "." << endl;
@@ -237,13 +336,16 @@ bool Player::useItem(const string& itemName) {
         }
     }
 
-    // Check for other item uses 
-    if (itemToUse->getName() == "lantern") {
-        cout << "You light the lantern, illuminating the dark area around you." << endl;
-        return true;
-    }
-    else if (itemToUse->getName() == "potion") {
-        cout << "You drink the potion and feel rejuvenated." << endl;
+    // Potion
+    if (itemToUse->getName() == "potion") {
+        // Heal the player
+        int previousHealth = getHealth();
+        heal(25); // Heal by 25 points
+        cout << "You drink the potion. A surge of warmth floods your veins, healing your wounds.\n";
+        cout << "Health restored: " << getHealth() - previousHealth << " points. ";
+        cout << "Current health: " << getHealth() << "/" << getMaxHealth() << endl;
+
+        // Remove the potion after use
         removeItem(itemToUse->getName());
         return true;
     }
@@ -269,12 +371,12 @@ bool Player::hasBackpack() const {
 }
 
 bool Player::canCarryMoreItems() const {
-    // If no backpack, can only carry 2 small items
+    // If no backpack, can only carry 3 small items
     if (!hasBackpack()) {
         return inventory.size() < 2;
     }
     // With backpack, use its capacity
-    return true; 
+    return inventory.size() < 10;
 }
 
 bool Player::hasAmuletFragment(const string& fragmentName) const {
@@ -288,7 +390,7 @@ bool Player::hasAmuletFragment(const string& fragmentName) const {
 
 bool Player::combineAmuletFragments() {
     // Check if in correct location (Sorcerer's Tower)
-    if (getLocation()->getName() != "Sorcerer's Tower") {
+    if (getLocation()->getName() != "Ruined Temple") {
         int fragmentCount = 0;
         if (hasAmuletFragment("amethyst")) fragmentCount++;
         if (hasAmuletFragment("sapphire")) fragmentCount++;
@@ -394,4 +496,68 @@ bool Player::combineAmuletFragments() {
     addItem(amulet);
 
     return true;
+}
+
+bool Player::placeAmuletOnAltar() {
+    // Check if in Sorcerer's Tower and has amulet
+    if (getLocation()->getName() != "Sorcerer's Tower") {
+        if (hasItem("Amulet of Eldoria")) {
+            cout << "\nThe amulet pulses powerfully but nothing happens.\n";
+            cout << "You sense it must be placed in the Sorcerer's Tower to break the curse.\n";
+        }
+        return false;
+    }
+
+    // Check if altar exists in the room
+    bool altarExists = false;
+    for (auto entity : getLocation()->getContains()) {
+        if (entity->getName() == "altar") {
+            altarExists = true;
+            break;
+        }
+    }
+
+    if (!altarExists) {
+        cout << "There's no altar here to place the amulet on!\n";
+        return false;
+    }
+
+    if (!hasItem("Amulet of Eldoria")) {
+        cout << "You need the restored Amulet of Eldoria to break the curse.\n";
+        return false;
+    }
+
+    // All conditions met - win the game!
+    cout << "\nWith trembling hands, you place the Amulet of Eldoria on the ancient altar...\n\n";
+    cout << "A brilliant light erupts from the amulet!\n";
+    cout << "The tower shakes as dark energy swirls around you.\n";
+    cout << "The amulet's glow intensifies, absorbing all the cursed energy.\n\n";
+    cout << "Suddenly - SILENCE.\n\n";
+    cout << "The curse is broken! Eldoria is saved!\n";
+    cout << "*** CONGRATULATIONS! YOU HAVE WON THE GAME! ***\n\n";
+
+    return true; // Signal game win
+}
+
+bool Player::hasActiveLantern() const {
+    for (auto item : inventory) {
+        if (item->getName() == "lantern" && dynamic_cast<Item*>(item)->getIsLit()) {
+            return lanternTurnsRemaining > 0;
+        }
+    }
+    return false;
+}
+
+void Player::takeDamage(int amount) {
+    Creature::takeDamage(amount);
+    cout << "\n*** You took " << amount << " damage! Health: "
+        << getHealth() << "/" << getMaxHealth() << " ***\n";
+
+    // Add dramatic warnings at low health
+    if (getHealth() <= 25 && getHealth() > 10) {
+        cout << "You're badly wounded! Find healing quickly!\n";
+    }
+    else if (getHealth() <= 10) {
+        cout << "You're critically injured! One more hit could be fatal!\n";
+    }
 }

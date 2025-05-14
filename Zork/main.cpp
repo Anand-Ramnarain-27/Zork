@@ -3,29 +3,40 @@
 #include "GameEnums.h"
 #include "Room.h"
 #include "NPC.h"
+#include "Exit.h"
 #include <iostream>
+#include <string>
 #include <sstream>
 #include <algorithm>
 #include <vector>
+#include <chrono>
+#include <thread>
 
 using namespace std;
 
-void PrintWelcome();  
-void PrintHelp();     
-vector<string> TokenizeInput(const string& input);  // Splits input into words
-void ProcessCommand(const vector<string>& tokens, Player& player);  // Handles commands
+// Function prototypes
+void PrintWelcome();
+void PrintHelp();
+vector<string> TokenizeInput(const string& input);
+bool ProcessCommand(const vector<string>& tokens, Player& player);  // Returns bool
 
 int main() {
-    // Set up game world and player
+    // Initialize the game world
     World::InitializeWorld();
+
+    // Create player in the starting room
     Player player("Adventurer", "A brave soul seeking the amulet", World::GetStartingRoom());
 
+    // Game introduction
     PrintWelcome();
     player.getLocation()->look();
 
     // Main game loop
     string input;
     bool gameRunning = true;
+    int darknessTurns = 0;  // Track turns spent in darkness
+    bool darknessWarningGiven = false;  // Track if warning has been given
+
     while (gameRunning) {
         cout << "\n> ";
         getline(cin, input);
@@ -34,25 +45,87 @@ int main() {
         transform(input.begin(), input.end(), input.begin(), ::tolower);
         vector<string> tokens = TokenizeInput(input);
 
-        if (tokens.empty()) continue;
+        // Check if the player is in darkness
+        bool inDarkness = player.getLocation()->getIsDark() && !player.hasActiveLantern();
 
-        // Check for quit command
-        if (tokens[0] == "quit" || tokens[0] == "exit") {
-            cout << "Goodbye, brave adventurer!\n";
-            break;
+        if (!tokens.empty()) {
+            // Handle darkness mechanics
+            if (inDarkness) {
+                // First turn in darkness - give warning and countdown
+                if (!darknessWarningGiven) {
+                    cout << "\nWARNING: It's pitch black! You sense movement in the darkness.\n";
+                    cout << "You have a few seconds to light your lantern before creatures attack!\n";
+
+                    // Visual countdown
+                    cout << "3... ";
+                    this_thread::sleep_for(chrono::seconds(1));
+                    cout << "2... ";
+                    this_thread::sleep_for(chrono::seconds(1));
+                    cout << "1...\n";
+                    this_thread::sleep_for(chrono::seconds(1));
+
+                    darknessWarningGiven = true;
+                    darknessTurns++;
+
+                    // Let them execute this command without damage
+                    gameRunning = !ProcessCommand(tokens, player);
+                }
+                // "flee" and "use lantern" commands are safe in darkness
+                else if (tokens[0] == "flee" ||
+                    (tokens[0] == "use" && tokens.size() > 1 && tokens[1] == "lantern")) {
+                    gameRunning = !ProcessCommand(tokens, player);
+                }
+                // All other commands result in damage after warning
+                else {
+                    // Apply damage (increases with time spent in darkness)
+                    int damage = 10 + (darknessTurns * 5);
+                    player.takeDamage(damage);
+
+                    cout << "\nUnseen creatures attack you in the darkness!\n";
+                    cout << "You take " << damage << " damage. Health: "
+                        << player.getHealth() << "/" << player.getMaxHealth() << endl;
+
+                    // Still process the command
+                    gameRunning = !ProcessCommand(tokens, player);
+                    darknessTurns++;
+
+                    // Check if player died
+                    if (!player.isAlive()) {
+                        cout << "\nThe creatures of darkness overwhelm you...\n";
+                        cout << "Your journey ends here.\n";
+                        gameRunning = false;
+                    }
+                }
+            }
+            else {
+                // Normal command processing (not in darkness)
+                gameRunning = !ProcessCommand(tokens, player);
+                darknessWarningGiven = false;
+                darknessTurns = 0;
+            }
+
+            // Handle lantern duration
+            if (player.hasActiveLantern()) {
+                player.decrementLanternTurns();
+                if (player.getLanternTurnsRemaining() <= 0) {
+                    cout << "\nThe lantern's light flickers out...\n";
+
+                    // Only set room to dark if it should be dark naturally
+                    if (player.getLocation()->getName() == "Abandoned Mine") {
+                        player.getLocation()->setDark(true);
+                        cout << "Darkness engulfs you once more!\n";
+                    }
+                }
+                else if (player.getLanternTurnsRemaining() <= 2) {
+                    cout << "\nThe lantern's light is growing dim. It will only last "
+                        << player.getLanternTurnsRemaining() << " more turns.\n";
+                }
+            }
         }
+    }
 
-        // Process the command
-        ProcessCommand(tokens, player);
-
-        // Check win condition
-        if (player.hasItem("restored amulet") &&
-            player.getLocation()->getName() == "Sorcerer's Tower") {
-            cout << "\n\n*** You place the restored amulet on the altar! ***\n";
-            cout << "*** The curse is lifted and Eldoria is saved! ***\n";
-            cout << "*** CONGRATULATIONS! YOU WIN! ***\n\n";
-            gameRunning = false;
-        }
+    if (!player.isAlive()) {
+        cout << "\n===== GAME OVER =====\n";
     }
 
     return 0;
@@ -75,66 +148,59 @@ void PrintHelp() {
     cout << "  go [direction] - Move in specified direction\n";
     cout << "  north/n, south/s, east/e, west/w, up/u, down/d - Quick movement\n";
     cout << "  look/l - Look around the current room\n";
+    cout << "  flee - Escape from dangerous areas (may not always work)\n";
     cout << "\nInventory:\n";
     cout << "  take [item] - Pick up an item\n";
     cout << "  drop [item] - Drop an item\n";
     cout << "  inventory/i - Check your inventory\n";
-    cout << "  use [item] - Use an item (e.g., keys on doors)\n";
-    cout << "  combine [item1] [item2] - Combine two items\n";
+    cout << "  use [item] - Use an item (e.g., keys on doors, lantern for light)\n";
+    cout << "  combine amulet - Combine fragments at the temple altar\n";
+    cout << "  place amulet - Place completed amulet on tower altar\n";
     cout << "\nNPC Interaction:\n";
     cout << "  talk [npc] - Talk to an NPC\n";
-    cout << "  talk [npc] [topic] - Ask about specific topic\n";
     cout << "\nOther:\n";
     cout << "  help - Show this help\n";
     cout << "  quit - Exit the game\n";
-    cout << "\nInventory Rules:\n";
-    cout << "  - Without backpack: Can carry up to 3 small items\n";
-    cout << "  - With backpack: Can carry more items\n";
-    cout << "  - Some items must be given to NPCs (use 'give' command)\n";
 }
 
-// Splits input string into words
 vector<string> TokenizeInput(const string& input) {
     vector<string> tokens;
-    string currentToken;
+    string token;
     bool inQuotes = false;
 
     for (char c : input) {
         if (c == '"') {
             inQuotes = !inQuotes;
         }
-        else if (isspace(c) && !inQuotes) {
-            if (!currentToken.empty()) {
-                tokens.push_back(currentToken);
-                currentToken.clear();
+        else if ((isspace(c) && !inQuotes)) {
+            if (!token.empty()) {
+                tokens.push_back(token);
+                token.clear();
             }
         }
         else {
-            currentToken += c;
+            token += c;
         }
     }
 
-    if (!currentToken.empty()) {
-        tokens.push_back(currentToken);
+    if (!token.empty()) {
+        tokens.push_back(token);
     }
 
     return tokens;
 }
 
-// Handles all game commands
-void ProcessCommand(const vector<string>& tokens, Player& player) {
-    if (tokens.empty()) return;
-
+bool ProcessCommand(const vector<string>& tokens, Player& player) {
     string command = tokens[0];
+    bool inDarkness = player.getLocation()->getIsDark() && !player.hasActiveLantern();
 
     // Movement commands
     if (command == "go") {
         if (tokens.size() < 2) {
             cout << "Go where? (north, south, east, west, up, down)\n";
-            return;
+            return false;
         }
 
-        // Convert direction string to enum
         Direction dir;
         if (tokens[1] == "north") dir = Direction::NORTH;
         else if (tokens[1] == "south") dir = Direction::SOUTH;
@@ -144,8 +210,9 @@ void ProcessCommand(const vector<string>& tokens, Player& player) {
         else if (tokens[1] == "down") dir = Direction::DOWN;
         else {
             cout << "Invalid direction. Use north, south, east, west, up, or down.\n";
-            return;
+            return false;
         }
+
         player.moveTo(dir);
     }
     // Quick movement aliases
@@ -169,30 +236,45 @@ void ProcessCommand(const vector<string>& tokens, Player& player) {
     }
     // Observation
     else if (command == "look" || command == "l") {
-        player.getLocation()->look();
+        if (inDarkness) {
+            cout << "It's too dark to see anything. You need a light source.\n";
+        }
+        else {
+            player.getLocation()->look();
+        }
     }
     // Inventory management
     else if (command == "take") {
         if (tokens.size() < 2) {
-            cout << "Take what?\n" << endl;
-            return;
+            cout << "Take what?\n";
+            return false;
         }
 
-        // Combine all remaining tokens for the item name
+        // Prevent taking items in darkness
+        if (inDarkness) {
+            cout << "It's too dark to find anything. You need to light your lantern first.\n";
+            return false;
+        }
+
+        // Combine remaining tokens for item name
         string itemName;
         for (size_t i = 1; i < tokens.size(); i++) {
             if (i > 1) itemName += " ";
             itemName += tokens[i];
         }
-
-        player.takeItem(tokens[1]);
+        player.takeItem(itemName);
     }
     else if (command == "drop") {
         if (tokens.size() < 2) {
             cout << "Drop what?\n";
-            return;
+            return false;
         }
-        player.dropItem(tokens[1]);
+        string itemName;
+        for (size_t i = 1; i < tokens.size(); i++) {
+            if (i > 1) itemName += " ";
+            itemName += tokens[i];
+        }
+        player.dropItem(itemName);
     }
     else if (command == "inventory" || command == "i") {
         player.showInventory();
@@ -200,84 +282,119 @@ void ProcessCommand(const vector<string>& tokens, Player& player) {
     // Item interaction
     else if (command == "use") {
         if (tokens.size() < 2) {
-            cout << "Use what?" << endl;
-            return;
+            cout << "Use what?\n";
+            return false;
         }
-
-        // Combine remaining tokens for item names with spaces
         string itemName;
         for (size_t i = 1; i < tokens.size(); i++) {
             if (i > 1) itemName += " ";
             itemName += tokens[i];
         }
-
         player.useItem(itemName);
     }
+    // Amulet combination
     else if (command == "combine") {
         if (tokens.size() > 1 && tokens[1] == "amulet") {
+            if (inDarkness) {
+                cout << "It's too dark to work with the amulet fragments. You need light.\n";
+                return false;
+            }
             player.combineAmuletFragments();
         }
         else {
             cout << "Combine what? Try 'combine amulet'\n";
         }
     }
-    else if (command == "give") {
-        if (tokens.size() < 3) {
-            cout << "Give what to whom? (e.g., 'give bread blacksmith')" << endl;
-            return;
-        }
-
-        string itemName = tokens[1];
-        string npcName = tokens[2];
-
-        // Find NPC
-        Entity* entity = player.getLocation()->findEntity(npcName);
-        if (entity && entity->getType() == EntityType::NPC) {
-            NPC* npc = dynamic_cast<NPC*>(entity);
-            if (npc) {
-                if (player.hasItem(itemName)) {
-                    npc->interact(&player); // This will handle the giving
-                }
-                else {
-                    cout << "You don't have " << itemName << " to give." << endl;
-                }
+    // Amulet placement (win condition)
+    else if (command == "place") {
+        if (tokens.size() > 1 && tokens[1] == "amulet") {
+            if (inDarkness) {
+                cout << "It's too dark to find the altar. You need light.\n";
+                return false;
+            }
+            if (player.placeAmuletOnAltar()) {
+                return true; // Signal game win
             }
         }
         else {
-            cout << "There's no " << npcName << " here to give items to." << endl;
+            cout << "Place what? Try 'place amulet'\n";
         }
     }
     // NPC interaction
     else if (command == "talk") {
         if (tokens.size() < 2) {
             cout << "Talk to whom?\n";
-            return;
+            return false;
         }
 
-        // Combine all remaining tokens for the NPC name
+        if (inDarkness) {
+            cout << "You can't see anyone to talk to in this darkness.\n";
+            return false;
+        }
+
         string npcName;
         for (size_t i = 1; i < tokens.size(); i++) {
             if (i > 1) npcName += " ";
             npcName += tokens[i];
         }
-
-        // Find the NPC in the current room
-        // Find NPC using the full name
-        Entity* npc = player.getLocation()->findEntity(npcName);
-        if (npc && npc->getType() == EntityType::NPC) {
-            dynamic_cast<NPC*>(npc)->interact(&player);
+        Entity* entity = player.getLocation()->findEntity(npcName);
+        if (entity && entity->getType() == EntityType::NPC) {
+            dynamic_cast<NPC*>(entity)->interact(&player);
         }
         else {
             cout << "There's no " << npcName << " here to talk to." << endl;
         }
+    }
+    else if (command == "flee") {
+        Room* currentRoom = player.getLocation();
+
+        // Determine if fleeing is possible and where to
+        if (currentRoom->getName() == "Abandoned Mine") {
+            // Automatically move up from the mine
+            player.moveTo(Direction::UP);
+            cout << "You flee to safety, heart pounding!\n";
         }
+        else {
+            // Try to find a valid exit
+            bool fled = false;
+            for (auto dirPair : { make_pair(Direction::NORTH, "north"),
+                                make_pair(Direction::SOUTH, "south"),
+                                make_pair(Direction::EAST, "east"),
+                                make_pair(Direction::WEST, "west"),
+                                make_pair(Direction::UP, "up"),
+                                make_pair(Direction::DOWN, "down") }) {
+
+                Entity* exitEntity = currentRoom->getExit(dirPair.first);
+                if (exitEntity && exitEntity->getType() == EntityType::EXIT) {
+                    Exit* exit = dynamic_cast<Exit*>(exitEntity);
+                    if (exit && !exit->isLocked()) {
+                        player.moveTo(dirPair.first);
+                        cout << "You flee " << dirPair.second << " in a panic!\n";
+                        fled = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!fled) {
+                cout << "There's nowhere to flee to!\n";
+            }
+        }
+    }
     // Help system
     else if (command == "help") {
         PrintHelp();
+    }
+    // Quit command
+    else if (command == "quit" || command == "exit") {
+        cout << "Goodbye, brave adventurer!\n";
+        return true;
     }
     // Unknown command
     else {
         cout << "I don't understand '" << command << "'.\n";
         cout << "Type 'help' for available commands.\n";
     }
+
+    return false;
 }

@@ -6,7 +6,10 @@
 
 // Adds creature to starting room
 Creature::Creature(EntityType type, const string& name, const string& description, Room* room) :
-    Entity(type, name, description), location(room) {
+    Entity(type, name, description), 
+    location(room),
+    health(100),    // Default health to 100
+    maxHealth(100) {
     if (room) room->addEntity(this);
 }
 
@@ -54,4 +57,20 @@ void Creature::move(Direction direction) {
 void Creature::look() const {
     Entity::look();
     if (location) cout << "In: " << location->getName() << endl;
+}
+
+void Creature::takeDamage(int amount) {
+    health = max(0, health - amount);
+    cout << name << " takes " << amount << " damage! ";
+    cout << "Health: " << health << "/" << maxHealth << endl;
+
+    if (!isAlive()) {
+        cout << name << " has been defeated!\n";
+    }
+}
+
+void Creature::heal(int amount) {
+    health = min(health + amount, maxHealth);
+    cout << name << " heals " << amount << " HP. ";
+    cout << "Health: " << health << "/" << maxHealth << endl;
 }

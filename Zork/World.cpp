@@ -17,19 +17,27 @@ static Room* tower;
 void World::InitializeWorld() {
     // Create main locations
     village = new Room("Village of Eldoria",
-        "The peaceful starting village. Smoke rises from chimneys.");
+        "The peaceful starting village.Wooden cottages with smoking chimneys line the dirt paths. \
+        The villagers glance at you nervously, whispering about the curse.To the north, a path leads \
+        to the Enchanted Forest.A locked hatch in the town square descends into darkness.");
 
     forest = new Room("Enchanted Forest",
-        "A dense, magical forest with strange lights.");
+        "Ancient trees tower above you, their leaves glowing faintly with bioluminescent fungi. \
+         Strange whispers dance on the wind. A shadowy figure (the hermit?) watches from between \
+         the trees. The path back south leads to the village, while an overgrown trail winds east.");
 
     mine = new Room("Abandoned Mine",
-        "Dark mine shaft with rusty tools scattered about.");
+        "Pitch-black darkness swallows everything. You hear skittering noises...", true);
 
     temple = new Room("Ruined Temple",
-        "Once-great temple with faded murals of an amulet.");
+        "Crumbling stone pillars surround a central altar carved with three gem-shaped depressions. \
+         Faded murals depict the amulet's destruction. A ghostly priestess drifts near the staircase, \
+         which is barred by an ethereal lock. The forest lies west.");
 
     tower = new Room("Sorcerer's Tower",
-        "Tall stone tower with an ominous presence.");
+        "The air hums with dark energy. A cracked obsidian altar dominates the room, pulsing with \
+         malevolent light. The restored amulet could break the curse... if placed here. The staircase \
+         descends back to the temple.");
 
     // Connect locations (unlocked paths)
      // ===== CREATE EXITS =====
@@ -53,32 +61,34 @@ void World::InitializeWorld() {
 
     // ===== ADD ITEMS =====
     // Village items
+    // Village items
     village->addEntity(new Item("bread", "A loaf of stale bread", false, 0, false));
     village->addEntity(new Item("map", "A map of Eldoria", false, 0, false));
 
     // Special container item
-    Item* backpack = new Item("backpack", "A sturdy leather backpack", true, 5, false);
+    Item* backpack = new Item("backpack", "A weathered leather pack with a note tucked inside. It can hold 5 items.", true, 5, false);
     village->addEntity(backpack);
     backpack->addEntity(new Item("note", "A note: 'Find the hermit in the forest'", false, 0, false));
 
     // Forest items
-    forest->addEntity(new Item("lantern", "A brass lantern with oil", false, 0, false));
-    forest->addEntity(new Item("potion", "A glowing red potion", false, 0, false));
+    forest->addEntity(new Item("lantern", "A brass lantern with ever-burning oil. Its light repels shadow creatures.", false, 0, false));
+    forest->addEntity(new Item("potion", "A crimson elixir that smells of elderberries. The hermit covets this.", false, 0, false));
     forest->addEntity(new Item("herbs", "Medicinal forest herbs", false, 0, false));
 
     // Mine items
     mine->addEntity(new Item("pickaxe", "A rusty but usable pickaxe", false, 0, false));
-    mine->addEntity(new Item("amethyst", "A purple gemstone fragment", true, 0, true)); // Amulet fragment 1/3
+    mine->addEntity(new Item("amethyst", "A jagged purple shard humming with arcane energy. It feels warm to the touch.", true, 0, true)); // Amulet fragment 1/3
+    mine->setDark(true);
 
     // Temple items
-    temple->addEntity(new Item("golden key", "An ornate key with eldritch markings", false, 0, false));
-    //temple->addEntity(new Item("sapphire", "A blue gemstone fragment", true, 0, true)); // Amulet fragment 2/3
+    temple->addEntity(new Item("golden key", "Ornate and cold to the touch. The priestess might know its purpose.", false, 0, false));
+    temple->addEntity(new Item("sapphire", "A smooth blue fragment encased in ice that never melts. It whispers when held.", true, 0, true)); // Amulet fragment 2/3
 
     // Tower items
-    tower->addEntity(new Item("ruby", "A red gemstone fragment", true, 0, true)); // Amulet fragment 3/3
+    tower->addEntity(new Item("ruby", "A blood-red sliver that burns like embers. The curse's power resonates within it.", true, 0, true)); // Amulet fragment 3/3
     tower->addEntity(new Item("altar",
-        "An ancient altar with three gem-shaped depressions.\n"
-        "The carvings seem to match the amulet fragments you've found.",
+        "The cursed altar that started it all. A perfect amulet-shaped depression "
+        "glows faintly in its center, waiting for the restored artifact.",
         false, 0, false));
 
     // ===== ADD NPCs =====

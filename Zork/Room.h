@@ -7,9 +7,12 @@
 class Room : public Entity {
 private:
     map<Direction, Entity*> exits;  // All available exits
+    bool isDark;
 
 public:
-    Room(const string& name, const string& description);
+    Room(const string& name, const string& description, bool isDark = false)
+        : Entity(EntityType::ROOM, name, description), isDark(isDark) {
+    }
 
     // Exit management
     void setExit(Direction direction, Entity* exit);  // Add/update exit
@@ -19,4 +22,7 @@ public:
     void look() const override; 
 
     const map<Direction, Entity*>& getExits() const { return exits; }
+
+    void setDark(bool dark) { isDark = dark; }
+    bool getIsDark() const { return isDark; }
 };
