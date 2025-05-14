@@ -100,76 +100,111 @@ void World::InitializeWorld() {
     // ===== ADD NPCs =====
     // Village NPC - Blacksmith
     NPC* blacksmith = new NPC("Blacksmith", "A burly man with soot-covered arms", village);
-    blacksmith->addDialogue("Welcome to Eldoria, traveler.");
-    blacksmith->addDialogue("That mine's been locked since the curse began.");
-    blacksmith->addDialogue("No one dares enter... but I'll trade the key for bread.");
-    blacksmith->addDialogue("I'll give you the rusty key if you...");
-    blacksmith->addDialogue("1. Trade me bread (honorable)");
-    blacksmith->addDialogue("2. Steal it when I'm not looking (risky)");
-    blacksmith->addDialogue("3. Threaten me (evil)");
+    blacksmith->addDialogue("Welcome to Eldoria, traveler. The curse grows stronger each day.");
+    blacksmith->addDialogue("That mine's been locked since the shadows appeared. No one who enters returns unchanged.");
+    blacksmith->addDialogue("If you're set on going down there, you'll need my rusty key.");
+    blacksmith->addDialogue("I'll give you the rusty key if you help me first.");
+    blacksmith->addDialogue("1. Trade me bread - I haven't eaten today (honorable)");
+    blacksmith->addDialogue("2. Steal it when I'm not looking (dishonorable)");
+    blacksmith->addDialogue("3. Threaten me for it (evil)");
     blacksmith->setInteraction("bread", "rusty key");
-    blacksmith->addResponse("steal", "You try to steal the key...");
-    blacksmith->addResponse("threaten", "You threaten the blacksmith...");
+    blacksmith->addResponse("steal", "You try to steal the key while the blacksmith's back is turned...");
+    blacksmith->addResponse("threaten", "You threaten the blacksmith with violence if he doesn't hand over the key...");
 
     // Forest NPC - Hermit
     NPC* hermit = new NPC("Hermit", "An old man with wild hair and knowing eyes", forest);
-    hermit->addDialogue("The amulet was shattered into three fragments:");
-    hermit->addDialogue("- The amethyst lies buried in the abandoned mine.");
-    hermit->addDialogue("- The sapphire is guarded by the temple's ghost.");
-    hermit->addDialogue("- The ruby rests atop the sorcerer's tower.");
-    hermit->addDialogue("I can help you, but first...");
-    hermit->addDialogue("1. Give me the potion (trust)");
-    hermit->addDialogue("2. Attack me and take what you want (violence)");
-    hermit->addDialogue("3. Leave me alone (miss opportunity)");
+    hermit->addDialogue("*coughs weakly* A new seeker of the amulet, are you?");
+    hermit->addDialogue("The amulet was shattered into three fragments to prevent its power from being misused:");
+    hermit->addDialogue("- The amethyst fragment lies deep in the abandoned mine, guarded by darkness.");
+    hermit->addDialogue("- The sapphire fragment is kept by the temple's ghostly priestess.");
+    hermit->addDialogue("- The ruby fragment rests atop the sorcerer's tower, where the curse began.");
+    hermit->addDialogue("I can tell you more, but I need medicine first. That potion you carry would ease my suffering.");
+    hermit->addDialogue("1. Give me the potion (build trust)");
+    hermit->addDialogue("2. Attack me and take what knowledge I have (choose violence)");
+    hermit->addDialogue("3. Leave me to my fate (miss vital information)");
     hermit->setInteraction("potion", "scroll");
+    hermit->setHasImportantInfo(true);
+    hermit->addResponse("attack", "You raise your weapon against the frail hermit...");
+    hermit->addResponse("help", "Thank you for your kindness. The lantern you found will protect you in the darkness.");
 
     // Temple NPC - Ghostly Priestess
     NPC* priestess = new NPC("Ghostly Priestess", "A translucent figure in ancient robes", temple);
-    priestess->addDialogue("Only those who offer medicinal herbs may pass.");
-    priestess->addDialogue("The sapphire fragment is yours... if you heal my lingering pain.");
+    priestess->addDialogue("*her voice echoes eerily* The living do not belong here.");
+    priestess->addDialogue("My spirit is bound to this place by pain and regret.");
+    priestess->addDialogue("Only those who offer healing herbs may earn my trust and aid.");
+    priestess->addDialogue("The sapphire fragment you seek is within my keeping. Bring herbs to ease my eternal suffering.");
+    priestess->addDialogue("Once you have all three fragments, return here to combine them at the altar.");
     priestess->setInteraction("herbs", "sapphire");
+    priestess->addResponse("help", "You have shown compassion to the dead. Remember this path when darkness tempts you.");
+    priestess->addResponse("attack", "Your weapon passes through my spectral form. How foolish to attack what cannot be harmed by mortal means.");
 
     // Create new NPCs that trigger moral choices
     NPC* elderVillager = new NPC("Elder", "A frail old man with wisdom in his eyes", village);
-    elderVillager->addDialogue("Our village has suffered greatly from the curse.");
-    elderVillager->addDialogue("Many are hungry and sick. Can you help us?");
-    elderVillager->addDialogue("1. Share some of your supplies (Selfless)");
-    elderVillager->addDialogue("2. Ignore the suffering and focus on your quest (Selfish)");
-    elderVillager->addDialogue("3. Demand payment for your help (Very Selfish)");
+    elderVillager->addDialogue("*coughs weakly* Our village suffers greatly under this curse.");
+    elderVillager->addDialogue("Children go hungry, the sick grow worse, and shadows take more of us each night.");
+    elderVillager->addDialogue("You seem capable. Will you aid us in our time of need?");
+    elderVillager->addDialogue("1. Share some of your supplies (Increases positive alignment)");
+    elderVillager->addDialogue("2. Ignore our suffering and focus on your quest (Neutral)");
+    elderVillager->addDialogue("3. Demand payment for your help (Decreases alignment)");
+    elderVillager->addResponse("help", "Bless you, traveler. Your kindness brings light to our darkest hour.");
+    elderVillager->addResponse("ignore", "I see. Another who cares only for themselves. May you find what you seek, though it brings you no joy.");
+    elderVillager->addResponse("payment", "Even in these desperate times, there are those who would profit from suffering. Here, take these few coins - it's all we can spare.");
+
 
     // Add a bandit NPC to create moral choices
     NPC* bandit = new NPC("Bandit", "A rough-looking man with a knife", forest);
-    bandit->addDialogue("Stay back! This is my territory now!");
-    bandit->addDialogue("I've been driven to stealing by the curse... my family is starving.");
-    bandit->addDialogue("1. Attack the bandit (Combat)");
-    bandit->addDialogue("2. Forgive and help him (Selfless)");
-    bandit->addDialogue("3. Threaten and rob him instead (Very Selfish)");
+    bandit->addDialogue("*points knife* Stay back! This is my territory now!");
+    bandit->addDialogue("*lowers knife slightly* The curse... it's driven us all to desperation.");
+    bandit->addDialogue("My family is starving in the village. I never wanted to become a thief.");
+    bandit->addDialogue("1. Attack the bandit (Combat path)");
+    bandit->addDialogue("2. Forgive and help him (Greatly increases positive alignment)");
+    bandit->addDialogue("3. Threaten and rob him instead (Greatly decreases alignment)");
+    bandit->setAsEnemy(true);
+    bandit->addResponse("attack", "You draw your weapon as the bandit readies for combat!");
+    bandit->addResponse("forgive", "You... would help me? After I threatened you? *tears form in his eyes* I won't forget this mercy.");
+    bandit->addResponse("rob", "P-please! Don't take everything! My children will starve!");
+
 
     // Add a dark spirit that tempts the player
     NPC* darkSpirit = new NPC("Dark Spirit", "A shadowy figure that whispers temptations", tower);
-    darkSpirit->addDialogue("I sense great potential in you...");
-    darkSpirit->addDialogue("Why save these ungrateful villagers? Take the power for yourself!");
-    darkSpirit->addDialogue("I can show you how to corrupt the amulet for your own gain.");
-    darkSpirit->addDialogue("1. Reject the spirit's offer (Selfless)");
-    darkSpirit->addDialogue("2. Listen to learn more (Neutral)");
-    darkSpirit->addDialogue("3. Embrace the darkness (Dark Path)");
+    darkSpirit->addDialogue("*a voice like smoke in your mind* I sense great potential in you...");
+    darkSpirit->addDialogue("Why save these ungrateful villagers? The power of the amulet could be yours alone.");
+    darkSpirit->addDialogue("I can show you how to corrupt the amulet fragments. Direct their power for your own desires.");
+    darkSpirit->addDialogue("The world has never shown you kindness. Why show it mercy?");
+    darkSpirit->addDialogue("1. Reject the spirit's offer (Maintain alignment)");
+    darkSpirit->addDialogue("2. Listen to learn more (Slight alignment decrease)");
+    darkSpirit->addDialogue("3. Embrace the darkness (Major alignment decrease, gain dark powers)");
+    darkSpirit->addResponse("reject", "You will regret spurning such power when the darkness claims you!");
+    darkSpirit->addResponse("listen", "Yes... consider the possibilities. The fragments themselves can be corrupted, their power twisted to serve only you.");
+    darkSpirit->addResponse("embrace", "Excellent. The corruption begins with your heart and extends to the amulet. Sacrifice at the dark shrine to seal your path.");
+
 
     // Create a rival adventurer who can be ally or enemy
     NPC* rival = new NPC("Rival Adventurer", "A determined treasure hunter also seeking the amulet", temple);
-    rival->addDialogue("So, you're after the amulet too? We could work together... or against each other.");
-    rival->addDialogue("What do you say - alliance or competition?");
-    rival->addDialogue("1. Suggest working together (Cooperative)");
-    rival->addDialogue("2. Challenge to a race for the amulet (Competitive)");
-    rival->addDialogue("3. Attack and eliminate the competition (Dark Path)");
+    rival->addDialogue("Well, well... another one seeking the amulet. Competition arrives.");
+    rival->addDialogue("We could work together and share the glory, or race to claim it first.");
+    rival->addDialogue("I've already found clues to the ruby's location. What do you say?");
+    rival->addDialogue("1. Suggest working together (Cooperative path)");
+    rival->addDialogue("2. Challenge to a race for the amulet (Competitive path)");
+    rival->addDialogue("3. Attack and eliminate the competition (Dark path)");
     rival->setInteraction("trust", "map piece");
+    rival->addResponse("cooperate", "Smart choice. Two seekers are better than one against the dangers ahead.");
+    rival->addResponse("compete", "A challenge it is! May the best adventurer win - no hard feelings either way.");
+    rival->addResponse("attack", "So that's how it's going to be? *draws weapon* I won't go down easily!");
+
 
     // Add a corrupted villager who can be saved or sacrificed
     NPC* corruptedVillager = new NPC("Corrupted Villager", "A villager whose mind has been twisted by the curse", mine);
-    corruptedVillager->addDialogue("*Growls and mutters incoherently*");
-    corruptedVillager->addDialogue("The darkness... it speaks... must obey...");
-    corruptedVillager->addDialogue("1. Try to save them (Difficult, Selfless)");
-    corruptedVillager->addDialogue("2. End their suffering mercifully (Neutral)");
-    corruptedVillager->addDialogue("3. Sacrifice their corrupted essence for power (Dark Path)");
+    corruptedVillager->addDialogue("*growls and mutters incoherently while stumbling toward you*");
+    corruptedVillager->addDialogue("The d-darkness... it speaks to me... must... obey... *reaches toward you with blackened hands*");
+    corruptedVillager->addDialogue("H-help... me... or... end... this...");
+    corruptedVillager->addDialogue("1. Try to save them with herbs (Difficult, major alignment increase)");
+    corruptedVillager->addDialogue("2. End their suffering mercifully (Neutral alignment)");
+    corruptedVillager->addDialogue("3. Sacrifice their corrupted essence for power (Major alignment decrease)");
+    corruptedVillager->setAsEnemy(true);
+    corruptedVillager->addResponse("save", "You attempt to administer herbs to calm the corrupted villager...");
+    corruptedVillager->addResponse("mercy", "You end the villager's suffering quickly and painlessly. It was the only humane choice.");
+    corruptedVillager->addResponse("sacrifice", "As you perform the dark ritual, the villager's corrupted essence flows into you, granting forbidden power...");
 
     // Debug output
     cout << "=== WORLD INITIALIZED ===\n";

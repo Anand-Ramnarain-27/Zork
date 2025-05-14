@@ -4,6 +4,7 @@
 #include "Room.h"
 #include "NPC.h"
 #include "Exit.h"
+#include "StatusBar.h"
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -37,6 +38,7 @@ int main() {
     bool darknessWarningGiven = false;  // Track if warning has been given
 
     while (gameRunning) {
+        StatusBar::Display(player);
         cout << "\n> ";
         getline(cin, input);
 
@@ -103,7 +105,7 @@ int main() {
                 }
             }
             else {
-                // Normal command processing
+                // Normal command processing (not in darkness)
                 gameRunning = !ProcessCommand(tokens, player);
                 darknessWarningGiven = false;
                 darknessTurns = 0;
@@ -125,6 +127,10 @@ int main() {
                     cout << "\nThe lantern's light is growing dim. It will only last "
                         << player.getLanternTurnsRemaining() << " more turns.\n";
                 }
+            }
+
+            if (!tokens.empty() && tokens[0] != "look" && tokens[0] != "l") {
+                player.incrementMoves();
             }
         }
     }

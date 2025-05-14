@@ -13,7 +13,6 @@ private:
     bool hasGivenReward;
     bool trusts;              // Tracks if NPC trusts the player
     bool hasImportantInfo;    // If NPC has important story information
-    bool isEnemy;
 
 public:
     NPC(const std::string& name, const std::string& description, Room* room);
@@ -27,4 +26,6 @@ public:
     void talk() const;
     void interact(Player* player);
     void handlePlayerInput(const std::string& input, Player* player);
+
+    bool isEnemy;
 };

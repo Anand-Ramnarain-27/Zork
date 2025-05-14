@@ -14,6 +14,8 @@ private:
 
     int moralAlignment = 0; // -10 to 10 (negative = selfish, positive = altruistic)
     bool hasBetrayedNPCs = false;
+    bool hasSacrificed = false;
+    int movesTaken;
 
 public:
     Player(const string& name, const string& description, Room* room);
@@ -65,8 +67,11 @@ public:
     void showAlignment() const;
 
     // NEW METHODS FOR MULTIPLE ENDINGS
-    bool sacrificeNPC(const string& npcName);
-    bool forgiveEnemy(const string& enemyName);
+    void sacrificeNPC(const string& npcName);
+    void forgiveEnemy(const string& enemyName);
     bool makeMoralChoice(int choiceType);
     bool corruptArtifact(const string& artifactName);
+
+    void incrementMoves() { movesTaken++; }
+    int getMovesTaken() const { return movesTaken; }
 };
