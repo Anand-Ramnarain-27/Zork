@@ -175,18 +175,43 @@ void NPC::interact(Player* player) {
 
                     // Give reward if specified
                     if (!rewardItem.empty()) {
+                        std::string rewardDesc = "A reward from " + name;
+
+                        // Special descriptions for known rewards
+                        if (rewardItem == "scroll") {
+                            rewardDesc = "Ancient Scroll from the Hermit \
+                                The parchment is yellowed with age, covered in delicate script and strange symbols.It reads : \
+                                'To the Seeker of the Amulet : \
+                                The three fragments must be reunited at the temple forge to restore the amulet's power. Each fragment resonates with a unique energy: \
+                                - The amethyst controls shadows and can part the darkness \
+                                - The sapphire holds protective magic against curses \
+                                - The ruby contains the power to break or strengthen magical bonds \
+                                BEWARE : The corrupted altar in the tower will try to tempt you.The restored amulet must be placed there to break the curse, but approach with a pure heart. \
+                                The curse grows stronger in darkness.Keep your lantern lit in the mine, for shadow creatures feed on fear and flesh alike. \
+                                The fragments can be combined only at the temple forge.All three must be placed simultaneously for the ritual to succeed. \
+                                Choose your path wisely.The amulet reveals the true nature of its bearer. \
+                                - Eldric, Last of the Keepers' \
+                                At the bottom of the scroll is a hastily drawn map showing the relationship between the village, forest, mine, temple, and tower, with small notes about dangers in each location.";
+                        }
+                        else if (rewardItem == "sapphire") {
+                            rewardDesc = "A smooth blue fragment encased in ice that never melts. It whispers when held.";
+                        }
+                        else if (rewardItem == "rusty key") {
+                            rewardDesc = "An old iron key that opens the mine entrance";
+                        }
+
                         // Check if player can carry more items
                         if (player->canCarryMoreItems()) {
-                            Item* reward = new Item(rewardItem, "A reward from " + name);
+                            Item* reward = new Item(rewardItem, rewardDesc);
                             player->addItem(reward);
                             std::cout << name << " gives you " << rewardItem << " in return." << std::endl;
                         }
                         else {
                             std::cout << name << " tries to give you " << rewardItem
                                 << ", but you can't carry it!" << std::endl;
-                            // drop the reward in the room if invenotry is full
+                            // drop the reward in the room if inventory is full
                             if (location) {
-                                Item* reward = new Item(rewardItem, "A reward from " + name);
+                                Item* reward = new Item(rewardItem, rewardDesc);
                                 location->addEntity(reward);
                                 std::cout << rewardItem << " falls to the ground." << std::endl;
                             }
