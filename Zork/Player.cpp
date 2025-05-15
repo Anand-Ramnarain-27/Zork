@@ -1,3 +1,4 @@
+// Player.cpp
 #include "Player.h"
 #include "Room.h"
 #include "Creature.h"
@@ -9,63 +10,61 @@
 #include <iostream>
 #include <algorithm>
 
-
 Player::Player(const std::string& name, const std::string& description, Room* room) :
     Creature(EntityType::PLAYER, name, description, room),
     lanternTurnsRemaining(0),
-    movesTaken(0) {
+    movesTaken(0),
+    moralAlignment(0),
+    hasBetrayedNPCs(false),
+    hasSacrificed(false) {
     setHealth(100);
 }
 
+// Movement and Location Methods
 bool Player::moveTo(Direction direction) {
     if (location == nullptr) {
-        cout << "You are nowhere!" << endl;
+        std::cout << "You are nowhere!" << std::endl;
         return false;
     }
 
-    // Get the exit in the specified direction
     Entity* exitEntity = location->getExit(direction);
     if (exitEntity == nullptr) {
-        cout << "You can't go that way." << endl;
+        std::cout << "You can't go that way." << std::endl;
         return false;
     }
 
-    // Check if it's actually an exit
     if (exitEntity->getType() != EntityType::EXIT) {
-        cout << "That's not a valid exit." << endl;
+        std::cout << "That's not a valid exit." << std::endl;
         return false;
     }
 
     Exit* exit = dynamic_cast<Exit*>(exitEntity);
     if (exit == nullptr) {
-        cout << "Something strange happened with that exit." << endl;
+        std::cout << "Something strange happened with that exit." << std::endl;
         return false;
     }
 
-    // Check if exit is locked
     if (exit->isLocked()) {
-        cout << "The " << exit->getName() << " is locked. You need a "
-            << exit->getKeyName() << " to open it." << endl;
+        std::cout << "The " << exit->getName() << " is locked. You need a "
+            << exit->getKeyName() << " to open it." << std::endl;
         return false;
     }
 
-    // Move to the destination room
     Room* destination = exit->getDestination();
     if (destination == nullptr) {
-        cout << "The exit leads nowhere!" << endl;
+        std::cout << "The exit leads nowhere!" << std::endl;
         return false;
     }
 
-    cout << "You go " << directionToString(direction) << " to "
-        << destination->getName() << "." << endl;
+    std::cout << "You go " << directionToString(direction) << " to "
+        << destination->getName() << "." << std::endl;
 
     setLocation(destination);
 
-    // Enhanced darkness messaging when entering a dark room
     if (destination->getIsDark() && !hasActiveLantern()) {
-        cout << "\nYou step into pitch darkness. You can't see a thing!\n";
-        cout << "You should use your lantern if you have one, or flee immediately.\n";
-        cout << "You sense movement in the shadows around you...\n";
+        std::cout << "\nYou step into pitch darkness. You can't see a thing!\n";
+        std::cout << "You should use your lantern if you have one, or flee immediately.\n";
+        std::cout << "You sense movement in the shadows around you...\n";
     }
     else {
         destination->look();
@@ -74,84 +73,87 @@ bool Player::moveTo(Direction direction) {
     return true;
 }
 
-bool Player::takeItem(const string& itemName) {
+// Inventory Management Methods
+bool Player::takeItem(const std::string& itemName) {
     if (location == nullptr) return false;
 
     if (location->getIsDark() && !hasActiveLantern()) {
-        cout << "You blindly grope around in the darkness, but can't find anything.\n";
-        cout << "Using your lantern would be much safer than fumbling in the dark.\n";
+        std::cout << "You blindly grope around in the darkness, but can't find anything.\n";
+        std::cout << "Using your lantern would be much safer than fumbling in the dark.\n";
         return false;
     }
 
-    Entity* item = location->findEntity(itemName);
-    if (item && item->getType() == EntityType::ITEM) {
+    Entity* entity = location->findEntity(itemName);
+    if (entity && entity->getType() == EntityType::ITEM) {
+        Item* item = dynamic_cast<Item*>(entity);
+
+        // Check if the item is fixed in place
+        if (item->getIsFixedInPlace()) {
+            std::cout << "The " << item->getName() << " is firmly fixed in place and cannot be moved." << std::endl;
+            return false;
+        }
+
         if (canCarryMoreItems()) {
-            location->removeEntity(item);
-            inventory.push_back(item);
-            cout << "You took the " << item->getName() << "." << endl;
+            location->removeEntity(entity);
+            inventory.push_back(entity);
+            std::cout << "You took the " << entity->getName() << "." << std::endl;
             return true;
         }
         else {
-            cout << "You can't carry more items right now." << endl;
+            std::cout << "You can't carry more items right now." << std::endl;
             return false;
         }
     }
 
-    // error message
-    cout << "You don't see ";
-    if (itemName.find(' ') != string::npos) {
-        cout << "\"" << itemName << "\"";
+    std::cout << "You don't see ";
+    if (itemName.find(' ') != std::string::npos) {
+        std::cout << "\"" << itemName << "\"";
     }
     else {
-        cout << itemName;
+        std::cout << itemName;
     }
-    cout << " here." << endl;
+    std::cout << " here." << std::endl;
 
-    // Only show available items if not in darkness
     if (!location->getIsDark() || hasActiveLantern()) {
-        cout << "You see: ";
+        std::cout << "You see: ";
         bool first = true;
         for (auto entity : location->getContains()) {
             if (entity->getType() == EntityType::ITEM) {
-                if (!first) cout << ", ";
-                cout << entity->getName();
+                if (!first) std::cout << ", ";
+                std::cout << entity->getName();
                 first = false;
             }
         }
 
-        if (first) { // If first is still true, no items were found
-            cout << "no items";
+        if (first) {
+            std::cout << "no items";
         }
-        cout << endl;
+        std::cout << std::endl;
     }
 
     return false;
 }
 
-bool Player::dropItem(const string& itemName) {
+bool Player::dropItem(const std::string& itemName) {
     for (auto it = inventory.begin(); it != inventory.end(); ++it) {
         if ((*it)->getName() == itemName) {
-            // Check if dropping a lit lantern in a dark room
             if (itemName == "lantern" && dynamic_cast<Item*>(*it)->getIsLit() &&
                 location && location->getIsDark()) {
-                cout << "You hesitate to drop your lit lantern in this darkness.\n";
-                cout << "That would leave you vulnerable to whatever lurks here.\n";
+                std::cout << "You hesitate to drop your lit lantern in this darkness.\n";
+                std::cout << "That would leave you vulnerable to whatever lurks here.\n";
 
-                // Allow the player to confirm
-                cout << "Are you sure? (y/n): ";
-                string response;
-                getline(cin, response);
-                transform(response.begin(), response.end(), response.begin(), ::tolower);
+                std::cout << "Are you sure? (y/n): ";
+                std::string response;
+                std::getline(std::cin, response);
+                std::transform(response.begin(), response.end(), response.begin(), ::tolower);
 
                 if (response != "y" && response != "yes") {
-                    cout << "Wise decision. You keep the lantern.\n";
+                    std::cout << "Wise decision. You keep the lantern.\n";
                     return false;
                 }
 
-                cout << "You drop the lantern. Its light continues to illuminate the area...\n";
-                // Note: Would need room-based light sources for this to work properly
-                // For now, just warn the player but don't let them drop their only light source
-                cout << "...but you realize that would be a terrible idea. You pick it back up.\n";
+                std::cout << "You drop the lantern. Its light continues to illuminate the area...\n";
+                std::cout << "...but you realize that would be a terrible idea. You pick it back up.\n";
                 return false;
             }
 
@@ -159,53 +161,53 @@ bool Player::dropItem(const string& itemName) {
                 location->addEntity(*it);
             }
             inventory.erase(it);
-            cout << "You dropped the " << itemName << "." << endl;
+            std::cout << "You dropped the " << itemName << "." << std::endl;
             return true;
         }
     }
 
-    cout << "You don't have a " << itemName << "." << endl;
+    std::cout << "You don't have a " << itemName << "." << std::endl;
     return false;
 }
 
-bool Player::hasItem(const string& itemName) const {
-    string lowerInput = itemName;
-    transform(lowerInput.begin(), lowerInput.end(), lowerInput.begin(), ::tolower);
+void Player::showInventory() const {
+    if (inventory.empty()) {
+        std::cout << "You're not carrying anything." << std::endl;
+        return;
+    }
+
+    std::cout << "You're carrying:" << std::endl;
+    for (auto item : inventory) {
+        if (item->getName() == "lantern") {
+            Item* lantern = dynamic_cast<Item*>(item);
+            std::cout << "- " << item->getName();
+            if (lantern && lantern->getIsLit()) {
+                std::cout << " (lit, " << lanternTurnsRemaining << " turns remaining)";
+            }
+            else {
+                std::cout << " (unlit)";
+            }
+            std::cout << std::endl;
+        }
+        else {
+            std::cout << "- " << item->getName() << std::endl;
+        }
+    }
+}
+
+bool Player::hasItem(const std::string& itemName) const {
+    std::string lowerInput = itemName;
+    std::transform(lowerInput.begin(), lowerInput.end(), lowerInput.begin(), ::tolower);
 
     for (auto item : inventory) {
-        string lowerItemName = item->getName();
-        transform(lowerItemName.begin(), lowerItemName.end(), lowerItemName.begin(), ::tolower);
+        std::string lowerItemName = item->getName();
+        std::transform(lowerItemName.begin(), lowerItemName.end(), lowerItemName.begin(), ::tolower);
 
         if (lowerItemName == lowerInput) {
             return true;
         }
     }
     return false;
-}
-
-void Player::showInventory() const {
-    if (inventory.empty()) {
-        cout << "You're not carrying anything." << endl;
-        return;
-    }
-
-    cout << "You're carrying:" << endl;
-    for (auto item : inventory) {
-        if (item->getName() == "lantern") {
-            Item* lantern = dynamic_cast<Item*>(item);
-            cout << "- " << item->getName();
-            if (lantern && lantern->getIsLit()) {
-                cout << " (lit, " << lanternTurnsRemaining << " turns remaining)";
-            }
-            else {
-                cout << " (unlit)";
-            }
-            cout << endl;
-        }
-        else {
-            cout << "- " << item->getName() << endl;
-        }
-    }
 }
 
 void Player::addItem(Entity* item) {
@@ -222,16 +224,31 @@ bool Player::removeItem(const std::string& itemName) {
     return false;
 }
 
-bool Player::useItem(const string& itemName) {
-    // Find the best matching item in inventory
-    Entity* itemToUse = nullptr;
-    string lowerInput = itemName;
-    transform(lowerInput.begin(), lowerInput.end(), lowerInput.begin(), ::tolower);
-
-    // First try exact match
+bool Player::hasBackpack() const {
     for (auto item : inventory) {
-        string lowerItemName = item->getName();
-        transform(lowerItemName.begin(), lowerItemName.end(), lowerItemName.begin(), ::tolower);
+        if (item->getName() == "backpack") {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Player::canCarryMoreItems() const {
+    if (!hasBackpack()) {
+        return inventory.size() < 2;
+    }
+    return inventory.size() < 10;
+}
+
+// Item Interaction Methods
+bool Player::useItem(const std::string& itemName) {
+    Entity* itemToUse = nullptr;
+    std::string lowerInput = itemName;
+    std::transform(lowerInput.begin(), lowerInput.end(), lowerInput.begin(), ::tolower);
+
+    for (auto item : inventory) {
+        std::string lowerItemName = item->getName();
+        std::transform(lowerItemName.begin(), lowerItemName.end(), lowerItemName.begin(), ::tolower);
 
         if (lowerItemName == lowerInput) {
             itemToUse = item;
@@ -239,7 +256,6 @@ bool Player::useItem(const string& itemName) {
         }
     }
 
-    // If no exact match, try partial match
     if (!itemToUse) {
         int bestMatchLength = 0;
         for (auto item : inventory) {
@@ -257,11 +273,10 @@ bool Player::useItem(const string& itemName) {
         }
     }
 
-    // Special handling for lantern
+    // Lantern handling
     if (lowerInput == "lantern" || (itemToUse && itemToUse->getName() == "lantern")) {
         Item* lantern = nullptr;
 
-        // Find lantern if not already found
         if (!itemToUse || itemToUse->getName() != "lantern") {
             for (auto item : inventory) {
                 if (item->getName() == "lantern") {
@@ -276,76 +291,70 @@ bool Player::useItem(const string& itemName) {
 
         if (lantern) {
             if (lantern->getIsLit()) {
-                cout << "The lantern is already lit.\n";
+                std::cout << "The lantern is already lit.\n";
 
                 if (lanternTurnsRemaining > 0) {
-                    cout << "It will last for " << lanternTurnsRemaining << " more turns.\n";
+                    std::cout << "It will last for " << lanternTurnsRemaining << " more turns.\n";
                 }
                 else {
-                    cout << "But it seems to be out of fuel.\n";
+                    std::cout << "But it seems to be out of fuel.\n";
                 }
             }
             else {
                 lantern->setLit(true);
-                lanternTurnsRemaining = 10; // Lasts for 10 turns
+                lanternTurnsRemaining = 10;
 
                 if (location->getIsDark()) {
-                    cout << "The lantern flames to life, its golden light pushing back the darkness!\n";
-                    cout << "Shadows flee to the corners as you can now see clearly.\n";
-                    cout << "The lantern will last for " << lanternTurnsRemaining << " turns.\n";
-
-                    // Show what's in the room now that it's lit
+                    std::cout << "The lantern flames to life, its golden light pushing back the darkness!\n";
+                    std::cout << "Shadows flee to the corners as you can now see clearly.\n";
+                    std::cout << "The lantern will last for " << lanternTurnsRemaining << " turns.\n";
                     location->look();
                 }
                 else {
-                    cout << "You light the lantern. It will last for about " << lanternTurnsRemaining << " turns.\n";
+                    std::cout << "You light the lantern. It will last for about " << lanternTurnsRemaining << " turns.\n";
                 }
             }
             return true;
         }
         else {
-            cout << "You don't have a lantern.\n";
+            std::cout << "You don't have a lantern.\n";
             return false;
         }
     }
 
-    // If still no match, show error with suggestions
     if (!itemToUse) {
-        cout << "You don't have '" << itemName << "'.";
+        std::cout << "You don't have '" << itemName << "'.";
         if (!inventory.empty()) {
-            cout << " You have: ";
+            std::cout << " You have: ";
             for (auto item : inventory) {
-                cout << item->getName();
+                std::cout << item->getName();
                 if (item != inventory.back()) {
-                    cout << ", ";
+                    std::cout << ", ";
                 }
             }
         }
-        cout << endl;
+        std::cout << std::endl;
         return false;
     }
 
-    // Check if we're trying to use the item on a locked exit
+    // Check for locked exits
     Room* currentRoom = getLocation();
     if (currentRoom) {
-        // Get all exits from the room
         for (auto exitPair : currentRoom->getExits()) {
             Entity* exitEntity = exitPair.second;
             if (exitEntity->getType() == EntityType::EXIT) {
                 Exit* exit = dynamic_cast<Exit*>(exitEntity);
                 if (exit && exit->isLocked()) {
-                    // Check if this item is the key for this exit
                     if (itemToUse->nameMatches(exit->getKeyName())) {
-                        // Add darkness check for key usage
                         if (currentRoom->getIsDark() && !hasActiveLantern()) {
-                            cout << "You fumble with the " << itemToUse->getName() << " in the darkness,\n";
-                            cout << "but can't find the keyhole. You need light to unlock doors here.\n";
+                            std::cout << "You fumble with the " << itemToUse->getName() << " in the darkness,\n";
+                            std::cout << "but can't find the keyhole. You need light to unlock doors here.\n";
                             return false;
                         }
 
                         if (exit->unlock(itemToUse->getName())) {
-                            cout << "You use the " << itemToUse->getName()
-                                << " to unlock the " << exit->getName() << "." << endl;
+                            std::cout << "You use the " << itemToUse->getName()
+                                << " to unlock the " << exit->getName() << "." << std::endl;
                             return true;
                         }
                     }
@@ -354,49 +363,29 @@ bool Player::useItem(const string& itemName) {
         }
     }
 
-    // Potion
+    // Potion handling
     if (itemToUse->getName() == "potion") {
-        // Heal the player
         int previousHealth = getHealth();
-        heal(25); // Heal by 25 points
-        cout << "You drink the potion. A surge of warmth floods your veins, healing your wounds.\n";
-        cout << "Health restored: " << getHealth() - previousHealth << " points. ";
-        cout << "Current health: " << getHealth() << "/" << getMaxHealth() << endl;
+        heal(25);
+        std::cout << "You drink the potion. A surge of warmth floods your veins, healing your wounds.\n";
+        std::cout << "Health restored: " << getHealth() - previousHealth << " points. ";
+        std::cout << "Current health: " << getHealth() << "/" << getMaxHealth() << std::endl;
 
-        // Remove the potion after use
         removeItem(itemToUse->getName());
         return true;
     }
 
-    // Default case
-    cout << "You're not sure how to use the " << itemToUse->getName() << " here." << endl;
+    std::cout << "You're not sure how to use the " << itemToUse->getName() << " here." << std::endl;
     return false;
 }
 
-bool Player::combineItems(const string& item1, const string& item2) {
-    cout << "Nothing happens when you try to combine " << item1 << " and " << item2 << "." << endl;
+bool Player::combineItems(const std::string& item1, const std::string& item2) {
+    std::cout << "Nothing happens when you try to combine " << item1 << " and " << item2 << "." << std::endl;
     return false;
 }
 
-bool Player::hasBackpack() const {
-    for (auto item : inventory) {
-        if (item->getName() == "backpack") {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Player::canCarryMoreItems() const {
-    // If no backpack, can only carry 2 small items
-    if (!hasBackpack()) {
-        return inventory.size() < 2;
-    }
-    // With backpack, use its capacity
-    return inventory.size() < 10;
-}
-
-bool Player::hasAmuletFragment(const string& fragmentName) const {
+// Amulet Fragment Methods
+bool Player::hasAmuletFragment(const std::string& fragmentName) const {
     for (auto item : inventory) {
         if (item->getName() == fragmentName) {
             return true;
@@ -413,98 +402,91 @@ bool Player::combineAmuletFragments() {
         if (hasAmuletFragment("ruby")) fragmentCount++;
 
         if (fragmentCount > 0) {
-            cout << "\nThe " << (fragmentCount == 1 ? "fragment" : "fragments")
+            std::cout << "\nThe " << (fragmentCount == 1 ? "fragment" : "fragments")
                 << " in your inventory pulse weakly but nothing happens.\n";
-            cout << "You sense they need to be brought to the Ruined Temple to be combined.\n";
+            std::cout << "You sense they need to be brought to the Ruined Temple to be combined.\n";
 
-            // Show which fragments player has
-            cout << "You have ";
+            std::cout << "You have ";
             bool first = true;
             if (hasAmuletFragment("amethyst")) {
-                cout << "amethyst";
+                std::cout << "amethyst";
                 first = false;
             }
             if (hasAmuletFragment("sapphire")) {
-                if (!first) cout << ", ";
-                cout << "sapphire";
+                if (!first) std::cout << ", ";
+                std::cout << "sapphire";
                 first = false;
             }
             if (hasAmuletFragment("ruby")) {
-                if (!first) cout << ", ";
-                cout << "ruby";
+                if (!first) std::cout << ", ";
+                std::cout << "ruby";
             }
-            cout << " fragment" << (fragmentCount > 1 ? "s" : "") << ".\n";
+            std::cout << " fragment" << (fragmentCount > 1 ? "s" : "") << ".\n";
         }
         else {
-            cout << "You don't have any amulet fragments to combine.\n";
+            std::cout << "You don't have any amulet fragments to combine.\n";
         }
         return false;
     }
 
-    // Check if placed on altar first
     bool onAltar = false;
     for (auto entity : getLocation()->getContains()) {
-        if (entity->getName() == "altar") {
+        if (entity->getName() == "forge") {
             onAltar = true;
             break;
         }
     }
 
     if (!onAltar) {
-        cout << "\nThe fragments vibrate intensely but refuse to combine.\n";
-        cout << "You notice an ancient altar in the temple - perhaps they need to be placed there?\n";
+        std::cout << "\nThe fragments vibrate intensely but refuse to combine.\n";
+        std::cout << "You noticed an ancient forge in the temple - perhaps they need to be placed there?\n";
         return false;
     }
 
-    // Check if player has all three fragments
     bool hasAll = hasAmuletFragment("amethyst") &&
         hasAmuletFragment("sapphire") &&
         hasAmuletFragment("ruby");
 
     if (!hasAll) {
-        cout << "\nYou stand before the altar with ";
+        std::cout << "\nYou stand before the altar with ";
         int fragmentCount = 0;
         if (hasAmuletFragment("amethyst")) fragmentCount++;
         if (hasAmuletFragment("sapphire")) fragmentCount++;
         if (hasAmuletFragment("ruby")) fragmentCount++;
 
-        cout << "only " << fragmentCount << " fragment" << (fragmentCount > 1 ? "s" : "") << ".\n";
-        cout << "The altar's three depressions mock you with their emptiness.\n";
+        std::cout << "only " << fragmentCount << " fragment" << (fragmentCount > 1 ? "s" : "") << ".\n";
+        std::cout << "The altar's three depressions mock you with their emptiness.\n";
 
-        // List missing fragments
-        cout << "You're missing: ";
+        std::cout << "You're missing: ";
         bool first = true;
         if (!hasAmuletFragment("amethyst")) {
-            cout << "amethyst";
+            std::cout << "amethyst";
             first = false;
         }
         if (!hasAmuletFragment("sapphire")) {
-            if (!first) cout << ", ";
-            cout << "sapphire";
+            if (!first) std::cout << ", ";
+            std::cout << "sapphire";
             first = false;
         }
         if (!hasAmuletFragment("ruby")) {
-            if (!first) cout << ", ";
-            cout << "ruby";
+            if (!first) std::cout << ", ";
+            std::cout << "ruby";
         }
-        cout << ".\n";
+        std::cout << ".\n";
         return false;
     }
 
-    // All requirements met - combine!
-    cout << "\nAs you place the three fragments on the altar:\n";
-    cout << "1. The amethyst begins humming at a piercing frequency\n";
-    cout << "2. The sapphire emits a wave of comforting warmth\n";
-    cout << "3. The ruby burns with sudden intensity\n\n";
-    cout << "The fragments rise into the air, spinning rapidly as arcane energy connects them!\n";
-    cout << "With a blinding flash and thunderous BOOM, the Amulet of Eldoria is restored!\n";
+    std::cout << "\nAs you place the three fragments in the forge:\n";
+    std::cout << "1. The amethyst begins humming at a piercing frequency\n";
+    std::cout << "2. The sapphire emits a wave of comforting warmth\n";
+    std::cout << "3. The ruby burns with sudden intensity\n\n";
+    std::cout << "The fragments rise into the air, spinning rapidly as arcane energy connects them!\n";
+    std::cout << "With a blinding flash and thunderous BOOM, the Amulet of Eldoria is restored!\n";
 
-    // Remove fragments
     removeItem("amethyst");
     removeItem("sapphire");
     removeItem("ruby");
 
-    // Add restored amulet
     Item* amulet = new Item("Amulet of Eldoria",
         "The fully restored artifact thrums with primordial energy.\n"
         "You feel its power resonating with your very soul.",
@@ -515,16 +497,14 @@ bool Player::combineAmuletFragments() {
 }
 
 bool Player::placeAmuletOnAltar() {
-    // Check if in Sorcerer's Tower and has amulet
     if (getLocation()->getName() != "Sorcerer's Tower") {
         if (hasItem("Amulet of Eldoria")) {
-            cout << "\nThe amulet pulses powerfully but nothing happens.\n";
-            cout << "You sense it must be placed in the Sorcerer's Tower to break the curse.\n";
+            std::cout << "\nThe amulet pulses powerfully but nothing happens.\n";
+            std::cout << "You sense it must be placed in the Sorcerer's Tower to break the curse.\n";
         }
         return false;
     }
 
-    // Check if altar exists in the room
     bool altarExists = false;
     for (auto entity : getLocation()->getContains()) {
         if (entity->getName() == "altar") {
@@ -534,152 +514,116 @@ bool Player::placeAmuletOnAltar() {
     }
 
     if (!altarExists) {
-        cout << "There's no altar here to place the amulet on!\n";
+        std::cout << "There's no altar here to place the amulet on!\n";
         return false;
     }
 
     if (!hasItem("Amulet of Eldoria")) {
-        cout << "You need the restored Amulet of Eldoria to break the curse.\n";
+        std::cout << "You need the restored Amulet of Eldoria to break the curse.\n";
         return false;
     }
 
-    cout << "\nAs you approach the altar with the amulet, you feel immense power flowing through your veins.\n";
-    cout << "The amulet grows warm in your hands, whispering temptations of unlimited power.\n\n";
+    std::cout << "\nAs you approach the altar with the amulet, you feel immense power flowing through your veins.\n";
+    std::cout << "The amulet grows warm in your hands, whispering temptations of unlimited power.\n\n";
 
-    cout << "What will you choose?\n";
-    cout << "1. Place the amulet on the altar to break the curse (Selfless)\n";
-    cout << "2. Absorb the amulet's power for yourself (Selfish)\n";
-    cout << "3. Destroy the amulet forever (Neutral)\n";
-    cout << "4. Hesitate and reconsider your options\n";
-    cout << "Choose (1-4): ";
+    std::cout << "What will you choose?\n";
+    std::cout << "1. Place the amulet on the altar to break the curse (Selfless)\n";
+    std::cout << "2. Absorb the amulet's power for yourself (Selfish)\n";
+    std::cout << "3. Destroy the amulet forever (Neutral)\n";
+    std::cout << "4. Hesitate and reconsider your options\n";
+    std::cout << "Choose (1-4): ";
 
-    string choice;
-    getline(cin, choice);
+    std::string choice;
+    std::getline(std::cin, choice);
 
     if (choice == "1") {
-        // Selfless ending - variations based on previous choices
-        cout << "\nWith trembling hands, you place the Amulet of Eldoria on the ancient altar...\n\n";
-        cout << "A brilliant light erupts from the amulet, filling the room!\n";
-        cout << "The tower shakes as dark energy swirls around you, drawn into the amulet.\n";
+        std::cout << "\nWith trembling hands, you place the Amulet of Eldoria on the ancient altar...\n\n";
+        std::cout << "A brilliant light erupts from the amulet, filling the room!\n";
+        std::cout << "The tower shakes as dark energy swirls around you, drawn into the amulet.\n";
 
         if (getAlignment() > 3) {
-            // The most heroic ending
-            cout << "The amulet recognizes your pure heart and amplifies your noble intentions.\n";
-            cout << "Not only is the curse broken, but the land begins to heal at an astonishing rate!\n";
-            cout << "The villagers will speak of your heroism for generations to come.\n";
-            cout << "*** PERFECT ENDING: LEGENDARY HERO ***\n";
+            std::cout << "The amulet recognizes your pure heart and amplifies your noble intentions.\n";
+            std::cout << "Not only is the curse broken, but the land begins to heal at an astonishing rate!\n";
+            std::cout << "The villagers will speak of your heroism for generations to come.\n";
+            std::cout << "*** PERFECT ENDING: LEGENDARY HERO ***\n";
         }
         else {
-            // Standard good ending
-            cout << "The amulet's glow intensifies, absorbing all the cursed energy.\n\n";
-            cout << "Suddenly - SILENCE.\n\n";
-            cout << "The curse is broken! Eldoria is saved!\n";
-            cout << "*** GOOD ENDING: SAVIOR OF ELDORIA ***\n";
+            std::cout << "The amulet's glow intensifies, absorbing all the cursed energy.\n\n";
+            std::cout << "Suddenly - SILENCE.\n\n";
+            std::cout << "The curse is broken! Eldoria is saved!\n";
+            std::cout << "*** GOOD ENDING: SAVIOR OF ELDORIA ***\n";
         }
         return true;
     }
     else if (choice == "2") {
-        // Selfish ending - variations based on character's darkness level
-        cout << "\nYou clutch the amulet tightly, feeling its power coursing through you...\n";
+        std::cout << "\nYou clutch the amulet tightly, feeling its power coursing through you...\n";
 
         if (getAlignment() < -5 || hasBetrayed()) {
-            // Dark overlord ending
-            cout << "The amulet recognizes the darkness in your heart and bonds with your corrupt soul.\n";
-            cout << "Immense power floods your body as your eyes turn pitch black.\n";
-            cout << "The villagers of Eldoria will serve their new dark master - YOU.\n";
-            cout << "*** DARK ENDING: RISE OF A TYRANT ***\n";
+            std::cout << "The amulet recognizes the darkness in your heart and bonds with your corrupt soul.\n";
+            std::cout << "Immense power floods your body as your eyes turn pitch black.\n";
+            std::cout << "The villagers of Eldoria will serve their new dark master - YOU.\n";
+            std::cout << "*** DARK ENDING: RISE OF A TYRANT ***\n";
         }
         else {
-            // Failed power grab ending
-            cout << "You attempt to absorb the amulet's power, but it resists your will!\n";
-            cout << "The power is too great for your unprepared body and mind.\n";
-            cout << "The amulet shatters in your hands, releasing a blast that consumes you.\n";
-            cout << "*** BAD ENDING: CONSUMED BY POWER ***\n";
-            takeDamage(getHealth()); // Kill the player
+            std::cout << "You attempt to absorb the amulet's power, but it resists your will!\n";
+            std::cout << "The power is too great for your unprepared body and mind.\n";
+            std::cout << "The amulet shatters in your hands, releasing a blast that consumes you.\n";
+            std::cout << "*** BAD ENDING: CONSUMED BY POWER ***\n";
+            takeDamage(getHealth());
         }
         return true;
     }
     else if (choice == "3") {
-        // Neutral ending - destroy the amulet
-        cout << "\nYou raise the amulet high and slam it down onto the altar with all your might.\n";
-        cout << "The amulet shatters with a deafening crack!\n\n";
+        std::cout << "\nYou raise the amulet high and slam it down onto the altar with all your might.\n";
+        std::cout << "The amulet shatters with a deafening crack!\n\n";
 
         if (getAlignment() > 0) {
-            // Positive neutral ending
-            cout << "The magical energies disperse harmlessly, washing over the land.\n";
-            cout << "The curse fades gradually, though Eldoria will never regain its former glory.\n";
-            cout << "The age of magic in this realm has come to an end.\n";
-            cout << "*** NEUTRAL ENDING: AGE OF BALANCE ***\n";
+            std::cout << "The magical energies disperse harmlessly, washing over the land.\n";
+            std::cout << "The curse fades gradually, though Eldoria will never regain its former glory.\n";
+            std::cout << "The age of magic in this realm has come to an end.\n";
+            std::cout << "*** NEUTRAL ENDING: AGE OF BALANCE ***\n";
         }
         else {
-            // Negative neutral ending
-            cout << "The magical energies explode outward violently!\n";
-            cout << "The curse is broken, but much of Eldoria's natural magic is forever lost.\n";
-            cout << "You survive, but wonder if your choice was truly the best one.\n";
-            cout << "*** NEUTRAL ENDING: PYRRHIC VICTORY ***\n";
+            std::cout << "The magical energies explode outward violently!\n";
+            std::cout << "The curse is broken, but much of Eldoria's natural magic is forever lost.\n";
+            std::cout << "You survive, but wonder if your choice was truly the best one.\n";
+            std::cout << "*** NEUTRAL ENDING: PYRRHIC VICTORY ***\n";
         }
         return true;
     }
     else {
-        // Player hesitates
-        cout << "\nYou step back from the altar, the weight of your decision heavy on your shoulders.\n";
-        cout << "Perhaps you need more time to consider your options...\n";
+        std::cout << "\nYou step back from the altar, the weight of your decision heavy on your shoulders.\n";
+        std::cout << "Perhaps you need more time to consider your options...\n";
         return false;
     }
 }
 
-bool Player::hasActiveLantern() const {
-    for (auto item : inventory) {
-        if (item->getName() == "lantern" && dynamic_cast<Item*>(item)->getIsLit()) {
-            return lanternTurnsRemaining > 0;
-        }
-    }
-    return false;
-}
-
-void Player::takeDamage(int amount) {
-    Creature::takeDamage(amount);
-    cout << "\n*** You took " << amount << " damage! Health: "
-        << getHealth() << "/" << getMaxHealth() << " ***\n";
-
-    // Add dramatic warnings at low health
-    if (getHealth() <= 25 && getHealth() > 10) {
-        cout << "You're badly wounded! Find healing quickly!\n";
-    }
-    else if (getHealth() <= 10) {
-        cout << "You're critically injured! One more hit could be fatal!\n";
-    }
-}
-
-bool Player::attackCreature(const string& creatureName) {
+// Combat and Interaction Methods
+bool Player::attackCreature(const std::string& creatureName) {
     if (location == nullptr) return false;
 
     Entity* target = location->findEntity(creatureName);
     if (!target || target->getType() != EntityType::NPC) {
-        cout << "You can't attack that!\n";
+        std::cout << "You can't attack that!\n";
         return false;
     }
 
     NPC* npc = dynamic_cast<NPC*>(target);
-    cout << "You attack " << npc->getName() << "!\n";
+    std::cout << "You attack " << npc->getName() << "!\n";
 
-    // 50% chance of success
     if (rand() % 2 == 0) {
-        cout << "You defeat " << npc->getName() << "!\n";
+        std::cout << "You defeat " << npc->getName() << "!\n";
 
-        // Check if the NPC has the rusty key or other valuable items
         if (npc->getName() == "Blacksmith") {
-            // Add rusty key to inventory
             Item* rustyKey = new Item("rusty key", "An old rusted key that might open something.");
             addItem(rustyKey);
-            cout << "You found a rusty key on the Blacksmith!\n";
-            makeSelfishChoice(); // This action reduces moral alignment
+            std::cout << "You found a rusty key on the Blacksmith!\n";
+            makeSelfishChoice();
         }
         else if (npc->getName() == "Hermit") {
-            // Special case - get fragment by force
             Item* fragment = new Item("sapphire", "Stolen fragment", true, 0, true);
             addItem(fragment);
-            cout << "You found a sapphire fragment on the Hermit!\n";
+            std::cout << "You found a sapphire fragment on the Hermit!\n";
             makeSelfishChoice();
             betrayNPCs();
         }
@@ -689,36 +633,31 @@ bool Player::attackCreature(const string& creatureName) {
         return true;
     }
     else {
-        cout << npc->getName() << " fights back!\n";
+        std::cout << npc->getName() << " fights back!\n";
         takeDamage(30);
         return false;
     }
 }
 
-bool Player::stealItem(const string& itemName) {
+bool Player::stealItem(const std::string& itemName) {
     if (location == nullptr) return false;
 
-    // First check if the item exists in the room
     Entity* itemEntity = location->findEntity(itemName);
 
-    // If item isn't in the room directly, check if any NPC might have it
     if (!itemEntity) {
-        // Check special cases for NPCs with items
         if (itemName == "rusty key") {
             Entity* blacksmith = location->findEntity("Blacksmith");
             if (blacksmith && blacksmith->getType() == EntityType::NPC) {
-                // 60% chance of success
                 if (rand() % 10 < 6) {
-                    cout << "You successfully steal the rusty key from the Blacksmith!\n";
+                    std::cout << "You successfully steal the rusty key from the Blacksmith!\n";
                     Item* rustyKey = new Item("rusty key", "An old rusted key that might open something.");
                     addItem(rustyKey);
                     makeSelfishChoice();
                     return true;
                 }
                 else {
-                    cout << "You got caught trying to steal from the Blacksmith!\n";
-                    // The Blacksmith might become angry or attack
-                    cout << "The Blacksmith glares at you. \"I saw that! Keep your hands to yourself!\"\n";
+                    std::cout << "You got caught trying to steal from the Blacksmith!\n";
+                    std::cout << "The Blacksmith glares at you. \"I saw that! Keep your hands to yourself!\"\n";
                     return false;
                 }
             }
@@ -726,9 +665,8 @@ bool Player::stealItem(const string& itemName) {
         else if (itemName == "sapphire" || itemName == "sapphire fragment") {
             Entity* hermit = location->findEntity("Hermit");
             if (hermit && hermit->getType() == EntityType::NPC) {
-                // 50% chance of success - harder than normal stealing
                 if (rand() % 10 < 5) {
-                    cout << "You successfully steal the sapphire fragment from the Hermit!\n";
+                    std::cout << "You successfully steal the sapphire fragment from the Hermit!\n";
                     Item* fragment = new Item("sapphire", "Stolen fragment", true, 0, true);
                     addItem(fragment);
                     makeSelfishChoice();
@@ -736,37 +674,32 @@ bool Player::stealItem(const string& itemName) {
                     return true;
                 }
                 else {
-                    cout << "The Hermit catches you trying to steal his precious fragment!\n";
-                    cout << "\"Thief! You are not worthy of this power!\"\n";
+                    std::cout << "The Hermit catches you trying to steal his precious fragment!\n";
+                    std::cout << "\"Thief! You are not worthy of this power!\"\n";
                     return false;
                 }
             }
         }
     }
 
-    // Regular item in the room
     if (itemEntity && itemEntity->getType() == EntityType::ITEM) {
-        // 60% chance of success
         if (rand() % 10 < 6) {
-            cout << "You successfully steal the " << itemName << "!\n";
+            std::cout << "You successfully steal the " << itemName << "!\n";
             makeSelfishChoice();
             return takeItem(itemName);
         }
         else {
-            cout << "You got caught stealing!\n";
-            // Alert NPCs or other consequences
-            cout << "The villagers look at you disapprovingly.\n";
+            std::cout << "You got caught stealing!\n";
+            std::cout << "The villagers look at you disapprovingly.\n";
             return false;
         }
     }
 
-    cout << "You don't see a " << itemName << " that you can steal here.\n";
+    std::cout << "You don't see a " << itemName << " that you can steal here.\n";
     return false;
 }
 
-// New method to sacrifice an NPC for power
 void Player::sacrificeNPC(const std::string& npcName) {
-    // Check if we're at the dark shrine
     bool atDarkShrine = false;
     if (location->getName() == "Abandoned Mine") {
         for (auto entity : location->getContains()) {
@@ -778,92 +711,81 @@ void Player::sacrificeNPC(const std::string& npcName) {
     }
 
     if (!atDarkShrine) {
-        cout << "The dark ritual can only be performed at the shrine in the mine.\n";
+        std::cout << "The dark ritual can only be performed at the shrine in the mine.\n";
         return;
     }
 
-    // Find the NPC
     Entity* entity = location->findEntity(npcName);
     if (!entity || entity->getType() != EntityType::NPC) {
-        cout << "There is no " << npcName << " here to sacrifice.\n";
+        std::cout << "There is no " << npcName << " here to sacrifice.\n";
         return;
     }
 
-    // Perform the sacrifice
-    cout << "You perform a dark ritual, sacrificing " << npcName << " at the shrine!\n";
-    cout << "Malevolent energy courses through you as " << npcName << "'s life force is consumed.\n";
+    std::cout << "You perform a dark ritual, sacrificing " << npcName << " at the shrine!\n";
+    std::cout << "Malevolent energy courses through you as " << npcName << "'s life force is consumed.\n";
 
-    // Major alignment penalty
     moralAlignment -= 10;
     hasSacrificed = true;
 
-    // Gain dark powers
     maxHealth += 20;
     health = maxHealth;
-    cout << "Your maximum health increases to " << maxHealth << "!\n";
+    std::cout << "Your maximum health increases to " << maxHealth << "!\n";
 
-    // Remove the NPC
     location->removeEntity(entity);
     delete entity;
 
-    // Update player's moral state
     if (moralAlignment < -20) {
-        cout << "\nThe darkness has fully claimed your soul. There may be no redemption for you now.\n";
+        std::cout << "\nThe darkness has fully claimed your soul. There may be no redemption for you now.\n";
     }
 }
 
-
-//  forgive an enemy
 void Player::forgiveEnemy(const std::string& enemyName) {
     Entity* entity = location->findEntity(enemyName);
     if (!entity || entity->getType() != EntityType::NPC) {
-        cout << "There is no " << enemyName << " here to forgive.\n";
+        std::cout << "There is no " << enemyName << " here to forgive.\n";
         return;
     }
 
     NPC* npc = dynamic_cast<NPC*>(entity);
     if (!npc->isEnemy) {
-        cout << enemyName << " has not wronged you. There is nothing to forgive.\n";
+        std::cout << enemyName << " has not wronged you. There is nothing to forgive.\n";
         return;
     }
 
-    cout << "You choose to forgive " << enemyName << " despite their actions.\n";
-    cout << "\"Your mercy is unexpected,\" " << enemyName << " says with genuine surprise.\n";
+    std::cout << "You choose to forgive " << enemyName << " despite their actions.\n";
+    std::cout << "\"Your mercy is unexpected,\" " << enemyName << " says with genuine surprise.\n";
 
-    // Major alignment improvement
     moralAlignment += 5;
     npc->setAsEnemy(false);
 
     if (moralAlignment > 15) {
-        cout << "\nYour compassion shines like a beacon in the darkness. The villagers whisper that you might be the one to break the curse.\n";
+        std::cout << "\nYour compassion shines like a beacon in the darkness. The villagers whisper that you might be the one to break the curse.\n";
     }
 }
 
-//  make moral choices with consequences
 bool Player::makeMoralChoice(int choiceType) {
     switch (choiceType) {
     case 1: // Help a villager
-        cout << "\nYou stop to help a struggling villager with their task.\n";
-        cout << "They are grateful and spread word of your kindness.\n";
+        std::cout << "\nYou stop to help a struggling villager with their task.\n";
+        std::cout << "They are grateful and spread word of your kindness.\n";
         makeAltruisticChoice();
         return true;
 
     case 2: // Ignore someone in need
-        cout << "\nYou ignore the pleas for help, focusing only on your quest.\n";
-        cout << "The villagers whisper disapprovingly as you pass.\n";
+        std::cout << "\nYou ignore the pleas for help, focusing only on your quest.\n";
+        std::cout << "The villagers whisper disapprovingly as you pass.\n";
         makeSelfishChoice();
         return true;
 
     case 3: // Share your supplies
-        if (inventory.size() > 1) { // Ensure player has something to share
-            cout << "\nYou share some of your supplies with the hungry refugees.\n";
-            cout << "Their grateful smiles warm your heart.\n";
+        if (inventory.size() > 1) {
+            std::cout << "\nYou share some of your supplies with the hungry refugees.\n";
+            std::cout << "Their grateful smiles warm your heart.\n";
             makeAltruisticChoice();
             makeAltruisticChoice();
-            // Lose a random item (except the amulet)
             for (auto it = inventory.begin(); it != inventory.end(); ++it) {
                 if ((*it)->getName() != "Amulet of Eldoria") {
-                    cout << "You give away your " << (*it)->getName() << ".\n";
+                    std::cout << "You give away your " << (*it)->getName() << ".\n";
                     delete* it;
                     inventory.erase(it);
                     break;
@@ -872,19 +794,18 @@ bool Player::makeMoralChoice(int choiceType) {
             return true;
         }
         else {
-            cout << "\nYou would share, but you have nothing to give.\n";
+            std::cout << "\nYou would share, but you have nothing to give.\n";
             return false;
         }
 
-    case 4: { // Take from others 
-        cout << "\nYou demand 'donations' from the frightened villagers.\n";
-        cout << "They reluctantly comply, fearing your wrath.\n";
+    case 4: {
+        std::cout << "\nYou demand 'donations' from the frightened villagers.\n";
+        std::cout << "They reluctantly comply, fearing your wrath.\n";
         makeSelfishChoice();
         makeSelfishChoice();
-        // Gain a random item
         Item* stolenItem = new Item("bread", "Stolen food from the villagers.");
         addItem(stolenItem);
-        cout << "You acquired some bread.\n";
+        std::cout << "You acquired some bread.\n";
         return true;
     }
 
@@ -893,65 +814,82 @@ bool Player::makeMoralChoice(int choiceType) {
     }
 }
 
-// corrupt an artifact for power
-bool Player::corruptArtifact(const string& artifactName) {
+bool Player::corruptArtifact(const std::string& artifactName) {
     if (!hasItem(artifactName)) {
-        cout << "You don't have " << artifactName << " to corrupt.\n";
+        std::cout << "You don't have " << artifactName << " to corrupt.\n";
         return false;
     }
 
-    cout << "\nYou channel dark energy into the " << artifactName << "...\n";
-    cout << "It twists and transforms in your hands, becoming something sinister.\n";
+    std::cout << "\nYou channel dark energy into the " << artifactName << "...\n";
+    std::cout << "It twists and transforms in your hands, becoming something sinister.\n";
 
-    // Remove the original item
     removeItem(artifactName);
 
-    // Replace with corrupted version
-    string corruptedName = "Corrupted " + artifactName;
+    std::string corruptedName = "Corrupted " + artifactName;
     Item* corruptedItem = new Item(corruptedName,
         "A once-pure artifact, now pulsing with dark energy.");
     addItem(corruptedItem);
 
-    cout << "The " << corruptedName << " now grants you additional power!\n";
+    std::cout << "The " << corruptedName << " now grants you additional power!\n";
 
-    // Penalty to alignment
     makeSelfishChoice();
     makeSelfishChoice();
 
-    // Increase max health as benefit
-    setHealth(getHealth() + 20); // Using setHealth instead of setMaxHealth
-    cout << "Your maximum health has increased. Health is now "
+    setHealth(getHealth() + 20);
+    std::cout << "Your maximum health has increased. Health is now "
         << getHealth() << "/" << getMaxHealth() << ".\n";
 
     return true;
 }
 
-// Method to show alignment status
 void Player::showAlignment() const {
-    cout << "\nYour moral compass points ";
+    std::cout << "\nYour moral compass points ";
 
     if (moralAlignment > 5) {
-        cout << "strongly toward selflessness and heroism.\n";
-        cout << "The villagers look to you with hope and admiration.\n";
+        std::cout << "strongly toward selflessness and heroism.\n";
+        std::cout << "The villagers look to you with hope and admiration.\n";
     }
     else if (moralAlignment > 2) {
-        cout << "toward good and kindness.\n";
-        cout << "People generally trust and respect you.\n";
+        std::cout << "toward good and kindness.\n";
+        std::cout << "People generally trust and respect you.\n";
     }
     else if (moralAlignment > -2) {
-        cout << "neither strongly toward good nor evil.\n";
-        cout << "People are uncertain of your true intentions.\n";
+        std::cout << "neither strongly toward good nor evil.\n";
+        std::cout << "People are uncertain of your true intentions.\n";
     }
     else if (moralAlignment > -5) {
-        cout << "toward selfishness and opportunism.\n";
-        cout << "People regard you with suspicion and fear.\n";
+        std::cout << "toward selfishness and opportunism.\n";
+        std::cout << "People regard you with suspicion and fear.\n";
     }
     else {
-        cout << "deeply into darkness and cruelty.\n";
-        cout << "Villagers flee at the sight of you, whispering warnings of your approach.\n";
+        std::cout << "deeply into darkness and cruelty.\n";
+        std::cout << "Villagers flee at the sight of you, whispering warnings of your approach.\n";
     }
 
     if (hasBetrayedNPCs) {
-        cout << "You have a reputation for betrayal that precedes you.\n";
+        std::cout << "You have a reputation for betrayal that precedes you.\n";
+    }
+}
+
+// Utility Methods
+bool Player::hasActiveLantern() const {
+    for (auto item : inventory) {
+        if (item->getName() == "lantern" && dynamic_cast<Item*>(item)->getIsLit()) {
+            return lanternTurnsRemaining > 0;
+        }
+    }
+    return false;
+}
+
+void Player::takeDamage(int amount) {
+    Creature::takeDamage(amount);
+    std::cout << "\n*** You took " << amount << " damage! Health: "
+        << getHealth() << "/" << getMaxHealth() << " ***\n";
+
+    if (getHealth() <= 25 && getHealth() > 10) {
+        std::cout << "You're badly wounded! Find healing quickly!\n";
+    }
+    else if (getHealth() <= 10) {
+        std::cout << "You're critically injured! One more hit could be fatal!\n";
     }
 }

@@ -18,7 +18,7 @@ using namespace std;
 void PrintWelcome();
 void PrintHelp();
 vector<string> TokenizeInput(const string& input);
-bool ProcessCommand(const vector<string>& tokens, Player& player);  // Returns bool
+bool ProcessCommand(const vector<string>& tokens, Player& player);
 
 int main() {
     // Initialize the game world
@@ -34,8 +34,8 @@ int main() {
     // Main game loop
     string input;
     bool gameRunning = true;
-    int darknessTurns = 0;  // Track turns spent in darkness
-    bool darknessWarningGiven = false;  // Track if warning has been given
+    int darknessTurns = 0;    // Track turns spent in darkness
+    bool darknessWarningGiven = false;    // Track if warning has been given
 
     while (gameRunning) {
         StatusBar::Display(player);
@@ -57,6 +57,7 @@ int main() {
                     cout << "\nWARNING: It's pitch black! You sense movement in the darkness.\n";
                     cout << "You have a few seconds to light your lantern before creatures attack!\n";
 
+                    // Visual countdown
                     cout << "3... ";
                     this_thread::sleep_for(chrono::seconds(1));
                     cout << "2... ";
@@ -357,7 +358,14 @@ bool ProcessCommand(const vector<string>& tokens, Player& player) {
         }
         Entity* entity = player.getLocation()->findEntity(npcName);
         if (entity && entity->getType() == EntityType::NPC) {
-            dynamic_cast<NPC*>(entity)->interact(&player);
+            NPC* npc = dynamic_cast<NPC*>(entity);
+            // Check if NPC has interacted and prevents reinteraction
+            if (npc->hasPlayerInteracted()) {
+                cout << npc->getName() << " has nothing more to say to you." << endl;
+            }
+            else {
+                npc->interact(&player);
+            }
         }
         else {
             cout << "There's no " << npcName << " here to talk to." << endl;

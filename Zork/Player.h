@@ -66,7 +66,7 @@ public:
     bool hasBetrayed() const { return hasBetrayedNPCs; }
     void showAlignment() const;
 
-    // NEW METHODS FOR MULTIPLE ENDINGS
+    //  MULTIPLE ENDINGS
     void sacrificeNPC(const string& npcName);
     void forgiveEnemy(const string& enemyName);
     bool makeMoralChoice(int choiceType);

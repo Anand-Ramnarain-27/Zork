@@ -2,18 +2,20 @@
 #include "Entity.h"
 #include <iostream>
 
-// Create new item with properties
 Item::Item(const string& name, const string& description,
-    bool isContainer, int capacity, bool isFragment) :
+    bool isContainer, int capacity, bool isFragment, bool isFixedInPlace) :
     Entity(EntityType::ITEM, name, description),
     isContainer(isContainer),
     capacity(capacity),
-    isFragment(isFragment) {
+    isFragment(isFragment),
+    isLit(false),
+    isFixedInPlace(isFixedInPlace) {
 }
 
 bool Item::getIsContainer() const { return isContainer; }
 int Item::getCapacity() const { return capacity; }
 bool Item::getIsFragment() const { return isFragment; }
+bool Item::getIsFixedInPlace() const { return isFixedInPlace; } // New getter implementation
 
 // Check if this item can hold another entity
 bool Item::canContain(const Entity* entity) const {
@@ -24,15 +26,18 @@ bool Item::canContain(const Entity* entity) const {
 
 // Show detailed item description
 void Item::look() const {
-    Entity::look(); // Show basic info
-
+    Entity::look();
     if (isContainer) {
-        cout << "Can hold items";
-        if (capacity > 0) cout << " (" << capacity << " max)";
-        cout << endl;
+        cout << "It can hold items";
+        if (capacity > 0) {
+            cout << " (capacity: " << capacity << ")";
+        }
+        cout << "." << endl;
     }
-
     if (isFragment) {
-        cout << "This is a piece of the ancient amulet!" << endl;
+        cout << "It looks like part of a broken amulet." << endl;
+    }
+    if (isFixedInPlace) {
+        cout << "It appears to be permanently fixed in place." << endl;
     }
 }
