@@ -1,12 +1,15 @@
 #pragma once
 #include "Entity.h"
-#include "GameEnums.h"
+#include "GameEnums.h" 
 #include <map>
+#include <string>
+#include <vector>
 
-// Represents a game location with exits to other rooms
+using std::map;
+
 class Room : public Entity {
 private:
-    map<Direction, Entity*> exits;  // All available exits
+    map<Direction, Entity*> exits;
     bool isDark;
 
 public:
@@ -14,12 +17,9 @@ public:
         : Entity(EntityType::ROOM, name, description), isDark(isDark) {
     }
 
-    // Exit management
-    void setExit(Direction direction, Entity* exit);  // Add/update exit
-    Entity* getExit(Direction direction) const;      // Get exit if exists
-
-    // Display room info
-    void look() const override; 
+    void setExit(Direction direction, Entity* exit);
+    Entity* getExit(Direction direction) const;
+    void look() const override;
 
     const map<Direction, Entity*>& getExits() const { return exits; }
 

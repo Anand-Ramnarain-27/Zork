@@ -4,31 +4,28 @@
 
 class Room;
 
-// Represents a connection between two rooms
 class Exit : public Entity {
 private:
-    Direction direction; 
-    Room* source;        // Starting room
-    Room* destination;   // Connecting room
-    bool locked;        // Whether exit is locked
-    string keyName;     // Item needed to unlock
+    Direction direction;  // Direction this exit connects from source room
+    Room* source;         // The room this exit leads from
+    Room* destination;    // The room this exit leads to
+    bool locked;          // Whether this exit is currently locked
+    string keyName;       // Name of the key required to unlock this exit
 
-	Direction getReverseDirection() const; //Allows for reverse direction
+    Direction getReverseDirection() const;  // Gets the opposite direction
 
 public:
     Exit(Direction direction, Room* source, Room* destination,
         const string& name, const string& description,
         bool locked = false, const string& keyName = "");
 
-    Direction getDirection() const { return direction; }
-    Room* getSource() const { return source; }
-    Room* getDestination() const { return destination; }
-    bool isLocked() const { return locked; }
-    const string& getKeyName() const { return keyName; }
+    Direction getDirection() const;
+    Room* getSource() const;
+    Room* getDestination() const;
+    bool isLocked() const;
+    const string& getKeyName() const;
 
-    // Try to unlock with an item (returns true if successful)
+    // Actions
     bool unlock(const string& key);
-
-    // Show exit description + lock status
     void look() const override;
 };

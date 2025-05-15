@@ -4,51 +4,45 @@
 #include <vector>
 #include <algorithm>
 
-using namespace std;
+using std::string;
+using std::list;
+using std::vector;
 
 enum class EntityType {
-    ENTITY,    // Base type
-    ROOM,      // Game locations
-    EXIT,      // Connections between rooms
-    ITEM,      // Objects that can be picked up
-    CREATURE,  // Living beings
-    PLAYER,    // The player character
-    NPC        // Non-player characters
+    ENTITY,     // Base entity type
+    ROOM,       // Game locations
+    EXIT,       // Connections between rooms
+    ITEM,       // Collectible objects
+    CREATURE,   // Living entities (base class)
+    PLAYER,     // User-controlled character
+    NPC         // Non-player characters
 };
 
-// Base class for all game objects
 class Entity {
 protected:
-    EntityType type;
-    string name;
-    string description;
-    list<Entity*> contains; // Items inside this entity
+    EntityType type;        // Type of this entity
+    string name;            // Name of the entity
+    string description;     // Description of the entity
+    list<Entity*> contains; // Items contained within this entity
 
 public:
     Entity(EntityType type, const string& name, const string& description);
     virtual ~Entity();
 
-    // Basic info getters
     EntityType getType() const;
     const string& getName() const;
     const string& getDescription() const;
     const list<Entity*>& getContains() const;
 
-    // Manage contained items
+    // Entity management
     void addEntity(Entity* entity);
     void removeEntity(Entity* entity);
-    Entity* findEntity(const string& name) const; // Find by name
-    bool containsEntity(const Entity* entity) const; // Check if exists
+    Entity* findEntity(const string& name) const;
+    bool containsEntity(const Entity* entity) const;
 
-    // New case-insensitive name matching
-    bool nameMatches(const string& nameToMatch) const {
-        string thisName = name;
-        string otherName = nameToMatch;
-        transform(thisName.begin(), thisName.end(), thisName.begin(), ::tolower);
-        transform(otherName.begin(), otherName.end(), otherName.begin(), ::tolower);
-        return thisName == otherName;
-    }
+    // Name matching (case-insensitive)
+    bool nameMatches(const string& nameToMatch) const;
 
-    virtual void update(); 
-    virtual void look() const; // Show description + contents
+    virtual void update();
+    virtual void look() const;
 };

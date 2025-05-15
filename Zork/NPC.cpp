@@ -1,4 +1,3 @@
-// NPC.cpp
 #include "NPC.h"
 #include "Player.h"
 #include "Room.h"
@@ -185,7 +184,7 @@ void NPC::interact(Player* player) {
                         else {
                             std::cout << name << " tries to give you " << rewardItem
                                 << ", but you can't carry it!" << std::endl;
-                            // Drop the reward in the room
+                            // drop the reward in the room if invenotry is full
                             if (location) {
                                 Item* reward = new Item(rewardItem, "A reward from " + name);
                                 location->addEntity(reward);
@@ -221,7 +220,6 @@ void NPC::interact(Player* player) {
 
     // Special interaction for NPCs with important information
     if (hasImportantInfo && trusts) {
-        // Offer special dialogue for quest-related information
         std::cout << name << " leans in closer and whispers:\n";
         if (dialogues.size() > 3) {
             std::cout << "\"" << dialogues[3] << "\"\n";

@@ -1,5 +1,4 @@
 #include "Item.h"
-#include "Entity.h"
 #include <iostream>
 
 Item::Item(const string& name, const string& description,
@@ -8,49 +7,88 @@ Item::Item(const string& name, const string& description,
     isContainer(isContainer),
     capacity(capacity),
     isFragment(isFragment),
-    isLit(false),
+    isLit(false),  // Items start unlit by default
     isFixedInPlace(isFixedInPlace) {
 }
 
-bool Item::getIsContainer() const { return isContainer; }
-int Item::getCapacity() const { return capacity; }
-bool Item::getIsFragment() const { return isFragment; }
-bool Item::getIsFixedInPlace() const { return isFixedInPlace; } // New getter implementation
-
-bool Item::canContain(const Entity* entity) const {
-    if (!isContainer) return false;
-    if (capacity > 0 && contains.size() >= capacity) return false;
-    return true;
+bool Item::getIsContainer() const {
+    return isContainer;
 }
 
-void Item::look() const {
-    Entity::look(); // This shows name and description
+int Item::getCapacity() const {
+    return capacity;
+}
 
+bool Item::getIsFragment() const {
+    return isFragment;
+}
+
+bool Item::getIsFixedInPlace() const {
+    return isFixedInPlace;
+}
+
+bool Item::getIsLit() const {
+    return isLit;
+}
+
+void Item::setLit(bool lit) {
+    isLit = lit;
+}
+
+// ========== Item Behavior ==========
+
+bool Item::canContain(const Entity* entity) const {
+    // Check if this item can contain the specified entity
+    if (!isContainer) {
+        return false; // This item is not a container
+    }
+
+    if (entity == nullptr) {
+        return false; // Cannot contain a null entity
+    }
+
+    if (capacity > 0 && contains.size() >= static_cast<size_t>(capacity)) {
+        return false; // Container is at capacity
+    }
+
+    return true; // Container has space for the entity
+}
+
+// ========== Information Display ==========
+
+void Item::look() const {
+    Entity::look(); // Shows name and description
     if (isContainer) {
-        cout << "It can hold items";
+        std::cout << "It can hold items";
         if (capacity > 0) {
-            cout << " (capacity: " << capacity << ")";
+            std::cout << " (capacity: " << capacity << ")";
         }
-        cout << "." << endl;
+        std::cout << "." << std::endl;
 
         // Show contents if any
         if (!contains.empty()) {
-            cout << "Inside you see:" << endl;
+            std::cout << "Inside you see:" << std::endl;
             for (auto entity : contains) {
-                cout << "- " << entity->getName() << endl;
+                std::cout << "- " << entity->getName() << std::endl;
             }
+        }
+        else {
+            std::cout << "It is currently empty." << std::endl;
         }
     }
 
+    // Display fragment information if applicable
     if (isFragment) {
-        cout << "It looks like part of a broken amulet." << endl;
+        std::cout << "It looks like part of a broken amulet." << std::endl;
     }
 
+    // Display fixed in place information if applicable
     if (isFixedInPlace) {
-        cout << "It appears to be permanently fixed in place." << endl;
+        std::cout << "It appears to be permanently fixed in place." << std::endl;
     }
 
-    if (getName() == "lantern") {
-        cout << "It is currently " << (isLit ? "lit" : "unlit") << "." << endl;
+    // Display lighting status for light sources
+    if (getName() == "lantern" || getName() == "torch") {
+        std::cout << "It is currently " << (isLit ? "lit" : "unlit") << "." << std::endl;
     }
 }

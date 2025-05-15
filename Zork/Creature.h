@@ -1,36 +1,38 @@
 #pragma once
 #include "Entity.h"
-#include "Room.h"
+#include "GameEnums.h"
+#include <string>
 
-// Base class for all living things in the game (player, NPCs)
+using std::string;
+
+class Room;
+
 class Creature : public Entity {
 protected:
-    Room* location; // Current room
+    Room* location;  // Current location of the creature
 
-    int health;
-    int maxHealth;
+    int health;      // Current health points
+    int maxHealth;   // Maximum health points
 
 public:
     Creature(EntityType type, const string& name, const string& description, Room* room);
     virtual ~Creature();
 
-    // Get current room
+    // Location management
     Room* getLocation() const;
-
-    // Change room (handles registration automatically)
     void setLocation(Room* newLocation);
 
-    // Try to move in a direction (checks exits)
+    // Movement
     virtual void move(Direction direction);
 
-    // Show creature info + location
+    // Information display
     virtual void look() const override;
 
     // Health management
-    int getHealth() const { return health; }
-    int getMaxHealth() const { return maxHealth; }
-    void setHealth(int newHealth) { health = newHealth; }
-    void heal(int amount);
+    int getHealth() const;
+    int getMaxHealth() const;
+    void setHealth(int newHealth);
+    bool isAlive() const;
     virtual void takeDamage(int amount);
-    bool isAlive() const { return health > 0; }
+    void heal(int amount);
 };

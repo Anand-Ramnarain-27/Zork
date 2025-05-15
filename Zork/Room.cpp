@@ -1,40 +1,38 @@
 #include "Room.h"
 #include "GameEnums.h"
-#include "Entity.h"
 #include "Exit.h"
+#include "Entity.h"
 #include <iostream>
 
-// Set exit in specified direction
 void Room::setExit(Direction direction, Entity* exit) {
     exits[direction] = exit;
 }
 
-// Get exit in specified direction (returns nullptr if none)
 Entity* Room::getExit(Direction direction) const {
     auto it = exits.find(direction);
     return it != exits.end() ? it->second : nullptr;
 }
 
-// Show full room description
 void Room::look() const {
+    std::cout << "\n";
     // First print room name and description
-    cout << name << endl;
-    cout << description << endl;
+    std::cout << name << std::endl;
+    std::cout << description << std::endl;
 
     // Print contained items (excluding player)
     bool hasItems = false;
     for (auto entity : contains) {
         if (entity->getType() != EntityType::PLAYER) {
             if (!hasItems) {
-                cout << "Contains:" << endl;
+                std::cout << "Contains:" << std::endl;
                 hasItems = true;
             }
-            cout << "- " << entity->getName() << endl;
+            std::cout << "- " << entity->getName() << std::endl;
         }
     }
 
     // Print exits
-    cout << "Exits:" << endl;
+    std::cout << "Exits:" << std::endl;
     for (auto exit : exits) {
         string direction;
         switch (exit.first) {
@@ -45,6 +43,6 @@ void Room::look() const {
         case Direction::UP: direction = "up"; break;
         case Direction::DOWN: direction = "down"; break;
         }
-        cout << "- " << direction << endl;
+        std::cout << "- " << direction << std::endl;
     }
 }

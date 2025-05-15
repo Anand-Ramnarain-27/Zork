@@ -27,7 +27,6 @@ int main() {
     // Create player in the starting room
     Player player("Adventurer", "A brave soul seeking the amulet", World::GetStartingRoom());
 
-    // Game introduction
     PrintWelcome();
     player.getLocation()->look();
 

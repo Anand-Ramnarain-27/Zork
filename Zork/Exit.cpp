@@ -3,6 +3,42 @@
 #include "Room.h" 
 #include <iostream>
 
+Exit::Exit(Direction direction, Room* source, Room* destination,
+    const string& name, const string& description,
+    bool locked, const string& keyName) :
+    Entity(EntityType::EXIT, name, description),
+    direction(direction),
+    source(source),
+    destination(destination),
+    locked(locked),
+    keyName(keyName)
+{
+    // Automatically register this exit with the source room
+    if (source != nullptr) {
+        source->setExit(direction, this);
+    }
+}
+
+Direction Exit::getDirection() const {
+    return direction;
+}
+
+Room* Exit::getSource() const {
+    return source;
+}
+
+Room* Exit::getDestination() const {
+    return destination;
+}
+
+bool Exit::isLocked() const {
+    return locked;
+}
+
+const string& Exit::getKeyName() const {
+    return keyName;
+}
+
 Direction Exit::getReverseDirection() const {
     switch (direction) {
     case Direction::NORTH: return Direction::SOUTH;
@@ -15,21 +51,10 @@ Direction Exit::getReverseDirection() const {
     }
 }
 
-Exit::Exit(Direction direction, Room* source, Room* destination,
-    const string& name, const string& description,
-    bool locked, const string& keyName) :
-    Entity(EntityType::EXIT, name, description),
-    direction(direction),
-    source(source),
-    destination(destination),
-    locked(locked),
-    keyName(keyName)
-{
-    // Automatically register with both rooms
-    source->setExit(direction, this);
-}
+// ========== Actions ==========
 
 bool Exit::unlock(const string& key) {
+    // Check if the provided key matches the required key
     if (key == keyName) {
         locked = false;
         return true;
@@ -38,8 +63,14 @@ bool Exit::unlock(const string& key) {
 }
 
 void Exit::look() const {
+    // Display basic entity information
     Entity::look();
+
+    // Display lock status if locked
     if (locked) {
-        cout << "The exit is locked. You need " << keyName << " to unlock it." << endl;
+        std::cout << "The exit is locked. You need " << keyName << " to unlock it." << std::endl;
+    }
+    else {
+        std::cout << "This exit leads to " << destination->getName() << "." << std::endl;
     }
 }

@@ -12,7 +12,7 @@ private:
 
     int lanternTurnsRemaining;
 
-    int moralAlignment = 0; // -10 to 10 (negative = selfish, positive = altruistic)
+    int moralAlignment = 0;
     bool hasBetrayedNPCs = false;
     bool hasSacrificed = false;
     int movesTaken;
@@ -67,7 +67,7 @@ public:
     bool hasBetrayed() const { return hasBetrayedNPCs; }
     void showAlignment() const;
 
-    // NEW METHODS FOR MULTIPLE ENDINGS
+    // MULTIPLE ENDINGS
     void sacrificeNPC(const string& npcName);
     void forgiveEnemy(const string& enemyName);
     bool makeMoralChoice(int choiceType);

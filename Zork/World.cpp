@@ -16,7 +16,6 @@ static Room* tower = nullptr;
 void World::InitializeWorld() {
     // Clean up any previous initialization
     if (village != nullptr) {
-        // Cleanup code would go here if needed
         delete village;
         delete forest;
         delete mine;
@@ -223,6 +222,5 @@ Room* World::GetStartingRoom() {
 }
 
 Room* World::CreateRoomsAndExits() {
-    // This function is no longer needed as everything happens in InitializeWorld
     return village;
 }

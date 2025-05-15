@@ -3,11 +3,11 @@
 
 class Item : public Entity {
 private:
-    bool isContainer;
-    int capacity; // For container items
-    bool isFragment; // For amulet fragments
-    bool isLit;
-    bool isFixedInPlace; // New property for immovable objects
+    bool isContainer;      // Whether this item can contain other items
+    int capacity;          // Maximum number of items this container can hold (0 = unlimited)
+    bool isFragment;       // Whether this is an amulet fragment for the main quest
+    bool isLit;            // Whether this item is currently providing light (for lanterns, torches)
+    bool isFixedInPlace;   // Whether this item can be picked up or is fixed to its location
 
 public:
     Item(const string& name, const string& description,
@@ -17,13 +17,15 @@ public:
     bool getIsContainer() const;
     int getCapacity() const;
     bool getIsFragment() const;
-    bool getIsFixedInPlace() const; 
+    bool getIsFixedInPlace() const;
+    bool getIsLit() const;
 
-    // Special actions
+    // Item state modification
+    void setLit(bool lit);
+
+    // Item behavior
     bool canContain(const Entity* entity) const;
-    void look() const override;
 
-    // Lantern specific methods
-    void setLit(bool lit) { isLit = lit; }
-    bool getIsLit() const { return isLit; }
+    // Information display
+    void look() const override;
 };

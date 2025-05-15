@@ -1,76 +1,128 @@
 #include "Creature.h"
-#include "Exit.h"  
+#include "Exit.h"
 #include "Room.h"
 #include "GameEnums.h"
 #include <iostream>
+#include <algorithm>
 
-// Adds creature to starting room
 Creature::Creature(EntityType type, const string& name, const string& description, Room* room) :
-    Entity(type, name, description), 
+    Entity(type, name, description),
     location(room),
     health(100),    // Default health to 100
     maxHealth(100) {
-    if (room) room->addEntity(this);
+    if (room != nullptr) {
+        room->addEntity(this);
+    }
 }
 
-// Removes from current room
 Creature::~Creature() {
-    if (location) location->removeEntity(this);
+    // Remove this creature from its location when destroyed
+    if (location != nullptr) {
+        location->removeEntity(this);
+    }
 }
 
-Room* Creature::getLocation() const { return location; }
+// ========== Location Management ==========
 
-// Updates location and handles room registration
+Room* Creature::getLocation() const {
+    return location;
+}
+
 void Creature::setLocation(Room* newLocation) {
-    if (location) location->removeEntity(this);
+    // Remove from current location
+    if (location != nullptr) {
+        location->removeEntity(this);
+    }
+
+    // Set new location
     location = newLocation;
-    if (location) location->addEntity(this);
+
+    // Add to new location
+    if (location != nullptr) {
+        location->addEntity(this);
+    }
 }
 
-// Handles movement between rooms
+// ========== Movement ==========
+
 void Creature::move(Direction direction) {
-    if (!location) return;
+    if (location == nullptr) return;
 
-    // Check if exit exists
+    // Check if there's an exit in the specified direction
     Entity* exitEntity = location->getExit(direction);
+    if (exitEntity == nullptr || exitEntity->getType() != EntityType::EXIT) {
+        std::cout << "You can't go that way." << std::endl;
+        return;
+    }
+
+    // Properly cast to Exit
     Exit* exit = dynamic_cast<Exit*>(exitEntity);
-
-    if (!exit) {
-        cout << "Can't go that way." << endl;
+    if (exit == nullptr) {
+        std::cout << "You can't go that way." << std::endl;
         return;
     }
 
-    // Check if locked
+    // Check if the exit is locked
     if (exit->isLocked()) {
-        cout << "It's locked." << endl;
+        std::cout << "The exit is locked." << std::endl;
         return;
     }
 
-    // Move and show new room
+    // Move to the destination
     setLocation(exit->getDestination());
-    cout << "Moved " << directionToString(direction)
-        << " to " << location->getName() << endl;
+    std::cout << "You move " << directionToString(direction) << " to " << location->getName() << std::endl;
     location->look();
 }
 
-// Shows creature details + current room
+// ========== Information Display ==========
+
 void Creature::look() const {
+    // Display base entity information
     Entity::look();
-    if (location) cout << "In: " << location->getName() << endl;
+
+    // Display location information if available
+    if (location != nullptr) {
+        std::cout << "Location: " << location->getName() << std::endl;
+    }
+}
+
+// ========== Health Management ==========
+
+int Creature::getHealth() const {
+    return health;
+}
+
+int Creature::getMaxHealth() const {
+    return maxHealth;
+}
+
+void Creature::setHealth(int newHealth) {
+    health = std::max(0, std::min(newHealth, maxHealth));
+}
+
+bool Creature::isAlive() const {
+    return health > 0;
 }
 
 void Creature::takeDamage(int amount) {
-    health = max(0, health - amount);
-    cout << name << " takes " << amount << " damage! ";
-    cout << "Health: " << health << "/" << maxHealth << endl;
+    // Ensure health doesn't go below 0
+    health = std::max(0, health - amount);
 
+    // Display damage information
+    std::cout << name << " takes " << amount << " damage! ";
+    std::cout << "Health: " << health << "/" << maxHealth << std::endl;
+
+    // Check if creature is defeated
     if (!isAlive()) {
-        cout << name << " has been defeated!\n";
+        std::cout << name << " has been defeated!" << std::endl;
     }
 }
 
 void Creature::heal(int amount) {
-    health = min(health + amount, maxHealth);
-    cout << name << " heals " << amount << " HP. ";
-    cout << "Health: " << health << "/" << maxHealth << endl;
+    // Ensure health doesn't exceed maxHealth
+    health = std::min(health + amount, maxHealth);
+
+    // Display healing information
+    std::cout << name << " heals " << amount << " HP. ";
+    std::cout << "Health: " << health << "/" << maxHealth << std::endl;
 }

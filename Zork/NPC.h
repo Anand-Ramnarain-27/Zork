@@ -4,7 +4,6 @@
 #include <map>
 #include <string>
 
-// Forward declaration to avoid circular dependency
 class Player;
 class Room;
 
