@@ -75,23 +75,21 @@ bool Player::moveTo(Direction direction) {
 // Inventory Management Methods
 bool Player::takeItem(const std::string& itemName) {
     if (location == nullptr) return false;
-
     if (location->getIsDark() && !hasActiveLantern()) {
         std::cout << "You blindly grope around in the darkness, but can't find anything.\n";
         std::cout << "Using your lantern would be much safer than fumbling in the dark.\n";
         return false;
     }
 
+    // First check if the item is in the current room (existing functionality)
     Entity* entity = location->findEntity(itemName);
     if (entity && entity->getType() == EntityType::ITEM) {
         Item* item = dynamic_cast<Item*>(entity);
-
         // Check if the item is fixed in place
         if (item->getIsFixedInPlace()) {
             std::cout << "The " << item->getName() << " is firmly fixed in place and cannot be moved." << std::endl;
             return false;
         }
-
         if (canCarryMoreItems()) {
             location->removeEntity(entity);
             inventory.push_back(entity);
@@ -104,6 +102,39 @@ bool Player::takeItem(const std::string& itemName) {
         }
     }
 
+    // If not in room, check inside containers in inventory
+    for (Entity* containerEntity : inventory) {
+        if (containerEntity->getType() == EntityType::ITEM) {
+            Item* containerItem = dynamic_cast<Item*>(containerEntity);
+            if (containerItem->getIsContainer()) {
+                // Check if the item is in this container
+                Entity* containedEntity = nullptr;
+                for (Entity* contained : containerItem->getContains()) {
+                    if (contained->nameMatches(itemName)) {
+                        containedEntity = contained;
+                        break;
+                    }
+                }
+
+                if (containedEntity && containedEntity->getType() == EntityType::ITEM) {
+                    // Found the item inside this container
+                    if (canCarryMoreItems()) {
+                        containerItem->removeEntity(containedEntity);
+                        inventory.push_back(containedEntity);
+                        std::cout << "You took the " << containedEntity->getName()
+                            << " from the " << containerItem->getName() << "." << std::endl;
+                        return true;
+                    }
+                    else {
+                        std::cout << "You can't carry more items right now." << std::endl;
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+
+    // Item wasn't found in room or containers
     std::cout << "You don't see ";
     if (itemName.find(' ') != std::string::npos) {
         std::cout << "\"" << itemName << "\"";
@@ -112,7 +143,6 @@ bool Player::takeItem(const std::string& itemName) {
         std::cout << itemName;
     }
     std::cout << " here." << std::endl;
-
     if (!location->getIsDark() || hasActiveLantern()) {
         std::cout << "You see: ";
         bool first = true;
@@ -123,13 +153,11 @@ bool Player::takeItem(const std::string& itemName) {
                 first = false;
             }
         }
-
         if (first) {
             std::cout << "no items";
         }
         std::cout << std::endl;
     }
-
     return false;
 }
 
