@@ -168,7 +168,7 @@ This project was both rewarding and educational. While parts of the implementati
 
 ## 📄 License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the [[LICENSE](LICENSE)](https://github.com/Anand-Ramnarain-27/Zork/blob/master/LICENSE.txt) file for details.
 
 ## 🙌 Credits
 
