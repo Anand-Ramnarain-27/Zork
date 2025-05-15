@@ -92,8 +92,8 @@ void World::InitializeWorld() {
 
     // Temple items
     temple->addEntity(new Item("golden key", "Ornate and cold to the touch. The priestess might know its purpose.", false, 0, false));
-    temple->addEntity(new Item("sapphire", "A smooth blue fragment encased in ice that never melts. It whispers when held.",
-        false, 0, true)); // Amulet fragment 2/3
+    //temple->addEntity(new Item("sapphire", "A smooth blue fragment encased in ice that never melts. It whispers when held.",
+    //    false, 0, true)); // Amulet fragment 2/3
     temple->addEntity(new Item("forge",
         "An ancient stone forge with mystical engravings. It has three depressions shaped like gems.",
         false, 0, false, true)); // Added 'true' to mark as fixed
@@ -187,20 +187,6 @@ void World::InitializeWorld() {
     priestess->setInteraction("herbs", "sapphire");
     priestess->addResponse("help", "You have shown compassion to the dead. Remember this path when darkness tempts you.");
     priestess->addResponse("attack", "Your weapon passes through my spectral form. How foolish to attack what cannot be harmed by mortal means.");
-
-    // Temple NPC - Rival Adventurer
-    NPC* rival = new NPC("Rival Adventurer", "A determined treasure hunter also seeking the amulet", temple);
-    rival->addDialogue("Well, well... another one seeking the amulet. Competition arrives.");
-    rival->addDialogue("We could work together and share the glory, or race to claim it first.");
-    rival->addDialogue("I've already found clues to the ruby's location. What do you say?");
-    rival->addDialogue("1. Suggest working together (Cooperative path)");
-    rival->addDialogue("2. Challenge to a race for the amulet (Competitive path)");
-    rival->addDialogue("3. Attack and eliminate the competition (Dark path)");
-    rival->setInteraction("trust", "map piece");
-    rival->addResponse("cooperate", "Smart choice. Two seekers are better than one against the dangers ahead.");
-    rival->addResponse("compete", "A challenge it is! May the best adventurer win - no hard feelings either way.");
-    rival->addResponse("attack", "So that's how it's going to be? *draws weapon* I won't go down easily!");
-    rival->setPreventReinteraction(true);
 
     // Tower NPC - Dark Spirit
     NPC* darkSpirit = new NPC("Dark Spirit", "A shadowy figure that whispers temptations", tower);

@@ -312,45 +312,6 @@ void NPC::interact(Player* player) {
             }
         }
     }
-    else if (name == "Rival Adventurer") {
-        std::cout << "The rival adventurer sizes you up. \"What will it be? Alliance or competition?\"\n";
-        std::cout << "1. Propose an alliance\n";
-        std::cout << "2. Challenge to a competition\n";
-        std::cout << "3. Attack the rival\n";
-
-        std::string choice;
-        std::getline(std::cin, choice);
-
-        if (choice == "1") {
-            std::cout << "\"An alliance it is,\" the rival agrees with a smile.\n";
-            std::cout << "\"Here's a map piece I found. It shows a secret passage in the tower.\"\n";
-
-            Item* mapPiece = new Item("map piece", "Shows a hidden passage in the sorcerer's tower");
-            player->addItem(mapPiece);
-            player->makeAltruisticChoice();
-            hasGivenReward = true;
-
-            hasInteracted = true;
-            preventReinteraction = true;
-        }
-        else if (choice == "2") {
-            std::cout << "\"A competition? I like your spirit,\" the rival grins.\n";
-            std::cout << "\"First one to find the ruby fragment wins. No cheating!\"\n";
-
-            hasInteracted = true;
-            preventReinteraction = true;
-        }
-        else if (choice == "3") {
-            std::cout << "You lunge at the rival adventurer!\n";
-            std::cout << "They dodge your attack. \"So that's how you want to play? Fine!\"\n";
-            player->makeSelfishChoice();
-            setAsEnemy(true);
-
-            hasInteracted = true;
-            preventReinteraction = true;
-        }
-        return;
-    }
     else if (name == "Dark Spirit") {
         std::cout << "The dark spirit's voice slithers into your mind. What do you do?\n";
         std::cout << "1. Reject its offer\n";
