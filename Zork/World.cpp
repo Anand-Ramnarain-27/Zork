@@ -16,6 +16,7 @@ static Room* tower = nullptr;
 void World::InitializeWorld() {
     // Clean up any previous initialization
     if (village != nullptr) {
+        // Cleanup code would go here if needed
         delete village;
         delete forest;
         delete mine;
@@ -215,14 +216,6 @@ void World::InitializeWorld() {
     darkSpirit->addResponse("listen", "Yes... consider the possibilities. The fragments themselves can be corrupted, their power twisted to serve only you.");
     darkSpirit->addResponse("embrace", "Excellent. The corruption begins with your heart and extends to the amulet. Sacrifice at the dark shrine to seal your path.");
     darkSpirit->setPreventReinteraction(true);
-
-    // Debug output
-    std::cout << "=== WORLD INITIALIZED ===\n";
-    std::cout << "Village contains: " << village->getContains().size() << " entities\n";
-    std::cout << "Forest contains: " << forest->getContains().size() << " entities\n";
-    std::cout << "Mine contains: " << mine->getContains().size() << " entities\n";
-    std::cout << "Temple contains: " << temple->getContains().size() << " entities\n";
-    std::cout << "Tower contains: " << tower->getContains().size() << " entities\n";
 }
 
 Room* World::GetStartingRoom() {
@@ -230,5 +223,6 @@ Room* World::GetStartingRoom() {
 }
 
 Room* World::CreateRoomsAndExits() {
+    // This function is no longer needed as everything happens in InitializeWorld
     return village;
 }

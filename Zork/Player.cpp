@@ -1,4 +1,3 @@
-// Player.cpp
 #include "Player.h"
 #include "Room.h"
 #include "Creature.h"

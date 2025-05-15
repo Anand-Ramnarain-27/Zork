@@ -29,6 +29,7 @@ public:
     bool dropItem(const string& itemName);
     bool hasItem(const string& itemName) const;
     void showInventory() const;
+    const vector<Entity*>& getInventory() const { return inventory; }
 
     // NPC interaction
     void addItem(Entity* item);
@@ -66,7 +67,7 @@ public:
     bool hasBetrayed() const { return hasBetrayedNPCs; }
     void showAlignment() const;
 
-    //  MULTIPLE ENDINGS
+    // NEW METHODS FOR MULTIPLE ENDINGS
     void sacrificeNPC(const string& npcName);
     void forgiveEnemy(const string& enemyName);
     bool makeMoralChoice(int choiceType);

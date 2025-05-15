@@ -165,6 +165,7 @@ void PrintHelp() {
     cout << "  take [item] - Pick up an item\n";
     cout << "  drop [item] - Drop an item\n";
     cout << "  inventory/i - Check your inventory\n";
+    cout << "  examine/x [item] - Look closely at an item to see details\n";
     cout << "  use [item] - Use an item (e.g., keys on doors, lantern for light)\n";
     cout << "  combine amulet - Combine fragments at the temple altar\n";
     cout << "  place amulet - Place completed amulet on tower altar\n";
@@ -297,6 +298,44 @@ bool ProcessCommand(const vector<string>& tokens, Player& player) {
     }
     else if (command == "inventory" || command == "i") {
         player.showInventory();
+    }
+    else if (command == "examine" || command == "x") {
+        if (tokens.size() < 2) {
+            cout << "Examine what?\n";
+            return false;
+        }
+
+        if (inDarkness) {
+            cout << "It's too dark to examine anything. You need a light source.\n";
+            return false;
+        }
+
+        string itemName;
+        for (size_t i = 1; i < tokens.size(); i++) {
+            if (i > 1) itemName += " ";
+            itemName += tokens[i];
+        }
+
+        // First check inventory
+        bool found = false;
+        for (auto item : player.getInventory()) {
+            if (item->nameMatches(itemName)) {
+                item->look();
+                found = true;
+                break;
+            }
+        }
+
+        // Then check room if not found in inventory
+        if (!found) {
+            Entity* entity = player.getLocation()->findEntity(itemName);
+            if (entity) {
+                entity->look();
+            }
+            else {
+                cout << "You don't see '" << itemName << "' here or in your inventory.\n";
+            }
+        }
     }
     // Item interaction
     else if (command == "use") {
